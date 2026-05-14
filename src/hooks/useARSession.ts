@@ -7,6 +7,7 @@ export type ARSessionState = 'idle' | 'starting' | 'active' | 'error' | 'unsuppo
 export interface UseARSessionReturn {
   state: ARSessionState;
   error: string | null;
+  session: XRSession | null;
   start: () => Promise<void>;
   end: () => void;
 }
@@ -14,6 +15,7 @@ export interface UseARSessionReturn {
 export function useARSession(): UseARSessionReturn {
   const [state, setState] = useState<ARSessionState>('idle');
   const [error, setError] = useState<string | null>(null);
+  const [session, setSession] = useState<XRSession | null>(null);
   const sessionRef = useRef<XRSession | null>(null);
 
   const start = useCallback(async () => {
@@ -49,10 +51,12 @@ export function useARSession(): UseARSessionReturn {
       });
 
       sessionRef.current = session;
+      setSession(session);
       setState('active');
 
       session.addEventListener('end', () => {
         sessionRef.current = null;
+        setSession(null);
         setState('idle');
       });
     } catch (err) {
@@ -65,6 +69,7 @@ export function useARSession(): UseARSessionReturn {
   const end = useCallback(() => {
     sessionRef.current?.end();
     sessionRef.current = null;
+    setSession(null);
     setState('idle');
   }, []);
 
@@ -78,5 +83,5 @@ export function useARSession(): UseARSessionReturn {
     };
   }, []);
 
-  return { state, error, start, end };
+  return { state, error, session, start, end };
 }

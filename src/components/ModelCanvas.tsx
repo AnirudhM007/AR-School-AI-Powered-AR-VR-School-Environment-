@@ -1,9 +1,9 @@
 'use client';
 
-import { Suspense, useRef, useState } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { useThree, Canvas } from '@react-three/fiber';
 import { OrbitControls, useGLTF, Environment, ContactShadows, Html } from '@react-three/drei';
 import { Group } from 'three';
+import { Suspense, useRef, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useModelRotation } from '@/hooks/useModelRotation';
 
@@ -41,14 +41,33 @@ function LoadingFallback() {
 }
 
 // ─── Main Component ───────────────────────────────────────────
+function XRBridge({ session }: { session: any }) {
+  const { gl } = useThree();
+
+  useEffect(() => {
+    if (session) {
+      gl.xr.enabled = true;
+      gl.xr.setSession(session);
+    } else {
+      gl.xr.enabled = false;
+    }
+  }, [session, gl]);
+
+  return null;
+}
+
 interface ModelCanvasProps {
   modelUrl: string;
   className?: string;
   autoRotate?: boolean;
+  xrSession?: any | null;
 }
 
-export default function ModelCanvas({ modelUrl, className, autoRotate = true }: ModelCanvasProps) {
+export default function ModelCanvas({ modelUrl, className, autoRotate = true, xrSession }: ModelCanvasProps) {
   const [rotating, setRotating] = useState(autoRotate);
+
+  // Position the model 1.5 meters in front of the camera in AR mode
+  const modelPosition = xrSession ? [0, 0, -1.5] : [0, 0, 0];
 
   return (
     <div className={`relative w-full h-full ${className ?? ''}`}>
@@ -57,6 +76,8 @@ export default function ModelCanvas({ modelUrl, className, autoRotate = true }: 
         gl={{ antialias: true, alpha: true }}
         className="r3f-canvas"
       >
+        <XRBridge session={xrSession} />
+
         {/* Lighting */}
         <ambientLight intensity={0.6} />
         <directionalLight position={[5, 5, 5]} intensity={1.2} castShadow />
@@ -66,7 +87,9 @@ export default function ModelCanvas({ modelUrl, className, autoRotate = true }: 
         {/* Model */}
         <Suspense fallback={<LoadingFallback />}>
           <AutoRotate active={rotating}>
-            <GLTFModel url={modelUrl} rotating={rotating} />
+            <group position={modelPosition as [number, number, number]}>
+              <GLTFModel url={modelUrl} rotating={rotating} />
+            </group>
           </AutoRotate>
           <Environment preset="city" />
           <ContactShadows

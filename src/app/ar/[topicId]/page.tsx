@@ -19,7 +19,7 @@ export default function ARPage() {
   const topicId = params?.topicId as string;
   const topic = getTopicById(topicId);
 
-  const { state, error, start, end } = useARSession();
+  const { state, error, session, start, end } = useARSession();
   const [showHelp, setShowHelp] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
   const [activeControl, setActiveControl] = useState<string | null>(null);
@@ -51,19 +51,13 @@ export default function ARPage() {
   ];
 
   return (
-    <main className="fixed inset-0 bg-black z-50 flex flex-col overflow-hidden">
-      {/* ── AR Canvas / Fallback ── */}
-      {state === 'active' ? (
-        // Real AR would overlay on camera via WebXR — here we show a mockup
-        <div className="absolute inset-0 bg-gradient-to-b from-gray-900 to-gray-800 flex items-center justify-center">
-          <div className="text-white/20 text-sm">📷 Camera feed active</div>
+    <main className={`fixed inset-0 z-50 flex flex-col overflow-hidden ${state === 'active' ? 'bg-transparent' : 'bg-black'}`}>
+      {/* ── AR Canvas ── */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="w-full h-full pointer-events-auto">
+          {topic && <ModelCanvas modelUrl={topic.modelUrl} autoRotate={state !== 'active'} xrSession={session} />}
         </div>
-      ) : (
-        /* Fallback 3D viewer */
-        <div className="absolute inset-0">
-          {topic && <ModelCanvas modelUrl={topic.modelUrl} autoRotate />}
-        </div>
-      )}
+      </div>
 
       {/* ── Top Bar ── */}
       <motion.div
