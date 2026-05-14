@@ -61,13 +61,36 @@ interface ModelCanvasProps {
   className?: string;
   autoRotate?: boolean;
   xrSession?: any | null;
+  transformPosition?: [number, number, number];
+  transformRotation?: [number, number, number];
+  transformScale?: number;
 }
 
-export default function ModelCanvas({ modelUrl, className, autoRotate = true, xrSession }: ModelCanvasProps) {
+export default function ModelCanvas({ 
+  modelUrl, 
+  className, 
+  autoRotate = true, 
+  xrSession,
+  transformPosition = [0, 0, 0],
+  transformRotation = [0, 0, 0],
+  transformScale = 1
+}: ModelCanvasProps) {
   const [rotating, setRotating] = useState(autoRotate);
 
-  // Position the model 1.5 meters in front of the camera in AR mode
-  const modelPosition = xrSession ? [0, 0, -1.5] : [0, 0, 0];
+  // Sync rotating state if autoRotate prop changes
+  useEffect(() => {
+    setRotating(autoRotate);
+  }, [autoRotate]);
+
+  // Base position: center on desktop, 1.5m forward in AR
+  const basePosition: [number, number, number] = xrSession ? [0, 0, -1.5] : [0, 0, 0];
+  
+  // Combine base position with user interaction offset
+  const finalPosition: [number, number, number] = [
+    basePosition[0] + transformPosition[0],
+    basePosition[1] + transformPosition[1],
+    basePosition[2] + transformPosition[2],
+  ];
 
   return (
     <div className={`relative w-full h-full ${className ?? ''}`}>
@@ -87,7 +110,11 @@ export default function ModelCanvas({ modelUrl, className, autoRotate = true, xr
         {/* Model */}
         <Suspense fallback={<LoadingFallback />}>
           <AutoRotate active={rotating}>
-            <group position={modelPosition as [number, number, number]}>
+            <group 
+              position={finalPosition} 
+              rotation={transformRotation}
+              scale={[transformScale, transformScale, transformScale]}
+            >
               <GLTFModel url={modelUrl} rotating={rotating} />
             </group>
           </AutoRotate>

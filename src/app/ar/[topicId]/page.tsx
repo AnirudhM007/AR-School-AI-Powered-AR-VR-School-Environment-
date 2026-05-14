@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -23,6 +23,78 @@ export default function ARPage() {
   const [showHelp, setShowHelp] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
   const [activeControl, setActiveControl] = useState<string | null>(null);
+
+  const [modelTransform, setModelTransform] = useState({
+    position: [0, 0, 0] as [number, number, number],
+    rotation: [0, 0, 0] as [number, number, number],
+    scale: 1,
+  });
+
+  const touchState = useRef({
+    startX: 0,
+    startY: 0,
+    lastX: 0,
+    lastY: 0,
+    initialDistance: 0,
+    initialScale: 1,
+  });
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!activeControl || activeControl === 'reset' || state !== 'active') return;
+    
+    if (activeControl === 'scale' && e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      touchState.current.initialDistance = Math.hypot(dx, dy);
+      touchState.current.initialScale = modelTransform.scale;
+    } else if (e.touches.length === 1) {
+      touchState.current.lastX = e.touches[0].clientX;
+      touchState.current.lastY = e.touches[0].clientY;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!activeControl || activeControl === 'reset' || state !== 'active') return;
+    
+    if (activeControl === 'scale') {
+      if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const distance = Math.hypot(dx, dy);
+        const scaleDelta = distance / (touchState.current.initialDistance || 1);
+        setModelTransform(prev => ({ ...prev, scale: Math.max(0.1, touchState.current.initialScale * scaleDelta) }));
+      } else if (e.touches.length === 1) {
+        const dy = e.touches[0].clientY - touchState.current.lastY;
+        setModelTransform(prev => ({ ...prev, scale: Math.max(0.1, prev.scale - dy * 0.01) }));
+        touchState.current.lastY = e.touches[0].clientY;
+      }
+    } else if (e.touches.length === 1) {
+      const dx = e.touches[0].clientX - touchState.current.lastX;
+      const dy = e.touches[0].clientY - touchState.current.lastY;
+      
+      if (activeControl === 'rotate') {
+        setModelTransform(prev => ({
+          ...prev,
+          rotation: [prev.rotation[0] + dy * 0.01, prev.rotation[1] + dx * 0.01, prev.rotation[2]]
+        }));
+      } else if (activeControl === 'move') {
+        setModelTransform(prev => ({
+          ...prev,
+          position: [prev.position[0] + dx * 0.005, prev.position[1] - dy * 0.005, prev.position[2]]
+        }));
+      }
+      
+      touchState.current.lastX = e.touches[0].clientX;
+      touchState.current.lastY = e.touches[0].clientY;
+    }
+  };
+
+  useEffect(() => {
+    if (activeControl === 'reset') {
+      setModelTransform({ position: [0, 0, 0], rotation: [0, 0, 0], scale: 1 });
+      setTimeout(() => setActiveControl(null), 300);
+    }
+  }, [activeControl]);
 
   // Auto-attempt AR on mount
   useEffect(() => {
@@ -51,11 +123,24 @@ export default function ARPage() {
   ];
 
   return (
-    <main className={`fixed inset-0 z-50 flex flex-col overflow-hidden ${state === 'active' ? 'bg-transparent' : 'bg-black'}`}>
+    <main 
+      className={`fixed inset-0 z-50 flex flex-col overflow-hidden ${state === 'active' ? 'bg-transparent' : 'bg-black'}`}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+    >
       {/* ── AR Canvas ── */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="w-full h-full pointer-events-auto">
-          {topic && <ModelCanvas modelUrl={topic.modelUrl} autoRotate={state !== 'active'} xrSession={session} />}
+          {topic && (
+            <ModelCanvas 
+              modelUrl={topic.modelUrl} 
+              autoRotate={state !== 'active'} 
+              xrSession={session} 
+              transformPosition={modelTransform.position}
+              transformRotation={modelTransform.rotation}
+              transformScale={modelTransform.scale}
+            />
+          )}
         </div>
       </div>
 
