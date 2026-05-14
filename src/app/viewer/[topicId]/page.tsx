@@ -124,9 +124,9 @@ export default function ViewerPage() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-            className="fixed bottom-20 left-0 right-0 mx-4 z-40"
+            className="fixed bottom-0 left-0 right-0 z-50"
           >
-            <GlassCard variant="strong" className="p-5">
+            <GlassCard variant="strong" className="p-5 pb-24 border-t border-white/10 shadow-2xl bg-[#080815]/95 backdrop-blur-3xl rounded-t-3xl rounded-b-none">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-white font-bold text-base">About {topic.title}</h2>
                 <button onClick={() => setShowInfo(false)}>

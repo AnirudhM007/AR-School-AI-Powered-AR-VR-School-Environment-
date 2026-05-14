@@ -76,6 +76,7 @@ export default function ChatUI({ topic }: ChatUIProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question, topic }),
       });
+      if (!res.ok) throw new Error('API Error');
       const data = await res.json();
       setMessages(prev => [
         ...prev,
@@ -108,7 +109,7 @@ export default function ChatUI({ topic }: ChatUIProps) {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full pb-20">
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         <AnimatePresence initial={false}>

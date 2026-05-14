@@ -8,7 +8,7 @@ import { TOPICS } from '@/lib/topics';
 
 export default function ARIndexPage() {
   return (
-    <main className="page-shell px-5 pt-12 pb-6">
+    <main className="page-shell px-5 pt-12 pb-24">
       <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
         <h1 className="text-2xl font-bold text-white">AR Mode <span>🥽</span></h1>
         <p className="text-white/40 text-sm mt-1">Select a topic to experience in AR</p>

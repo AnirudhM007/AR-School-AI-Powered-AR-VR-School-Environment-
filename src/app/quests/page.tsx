@@ -17,7 +17,7 @@ const itemVariants = {
 
 export default function QuestsPage() {
   return (
-    <main className="page-shell px-5 pt-12 pb-6">
+    <main className="page-shell px-5 pt-12 pb-24">
       <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mb-6">
         <Link href="/profile">
           <motion.div whileTap={{ scale: 0.85 }} className="w-10 h-10 glass rounded-2xl flex items-center justify-center">

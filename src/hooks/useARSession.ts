@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 
 export type ARSessionState = 'idle' | 'starting' | 'active' | 'error' | 'unsupported';
 
@@ -27,6 +27,12 @@ export function useARSession(): UseARSessionReturn {
     }
 
     try {
+      if (sessionRef.current) {
+        // Session already exists, end it first to be safe
+        sessionRef.current.end();
+        sessionRef.current = null;
+      }
+
       const supported = await navigator.xr.isSessionSupported('immersive-ar');
       if (!supported) {
         setState('unsupported');
@@ -60,6 +66,16 @@ export function useARSession(): UseARSessionReturn {
     sessionRef.current?.end();
     sessionRef.current = null;
     setState('idle');
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (sessionRef.current) {
+        sessionRef.current.end();
+        sessionRef.current = null;
+      }
+    };
   }, []);
 
   return { state, error, start, end };

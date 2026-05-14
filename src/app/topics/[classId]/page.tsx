@@ -39,7 +39,7 @@ export default function TopicsPage() {
   }
 
   return (
-    <main className="page-shell px-5 pt-12 pb-6">
+    <main className="page-shell px-5 pt-12 pb-24">
       {/* ── Header ── */}
       <motion.div
         initial={{ opacity: 0, y: -16 }}

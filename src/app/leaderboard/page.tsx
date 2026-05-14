@@ -15,7 +15,7 @@ export default function LeaderboardPage() {
   const data: LeaderboardEntry[] = activeTab === 'Global' ? LEADERBOARD_GLOBAL : activeTab === 'City' ? LEADERBOARD_CITY : LEADERBOARD_CITY;
 
   return (
-    <main className="page-shell px-5 pt-12 pb-6">
+    <main className="page-shell px-5 pt-12 pb-24">
       {/* ── Header ── */}
       <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="mb-6 text-center">
         <div className="w-16 h-16 mx-auto bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-glow-sm mb-3">

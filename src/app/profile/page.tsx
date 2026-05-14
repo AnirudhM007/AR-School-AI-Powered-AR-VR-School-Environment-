@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Settings, ChevronRight, Target, Medal, Zap } from 'lucide-react';
+import { Settings, ChevronRight, Target, Medal, Zap, Lock } from 'lucide-react';
 import GlassCard from '@/components/GlassCard';
 import { USER_PROFILE, getLevelProgress } from '@/lib/gamification';
 
@@ -16,7 +16,7 @@ export default function ProfilePage() {
   const { progress, nextLevelXP } = getLevelProgress(USER_PROFILE.xp, USER_PROFILE.level);
 
   return (
-    <main className="page-shell px-5 pt-12 pb-6">
+    <main className="page-shell px-5 pt-12 pb-24">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -16 }}
@@ -96,7 +96,12 @@ export default function ProfilePage() {
         </div>
         <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
           {USER_PROFILE.badges.map(badge => (
-            <GlassCard key={badge.id} className={`p-3 min-w-[100px] flex-shrink-0 text-center ${!badge.unlockedAt ? 'opacity-40 grayscale' : 'glow-border'}`} tap={false}>
+            <GlassCard key={badge.id} className={`p-3 min-w-[100px] flex-shrink-0 text-center relative ${!badge.unlockedAt ? 'opacity-50 grayscale' : 'glow-border'}`} tap={false}>
+              {!badge.unlockedAt && (
+                <div className="absolute top-1.5 right-1.5">
+                  <Lock size={12} className="text-white/40" />
+                </div>
+              )}
               <div className="text-3xl mb-1 drop-shadow-md">{badge.icon}</div>
               <p className="text-white text-xs font-bold leading-tight">{badge.title}</p>
             </GlassCard>

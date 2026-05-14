@@ -51,7 +51,7 @@ export default function QuizPage() {
   };
 
   return (
-    <main className="page-shell px-5 pt-12 pb-6 flex flex-col h-dvh">
+    <main className="page-shell px-5 pt-12 pb-24 flex flex-col h-dvh">
       {/* ── Header ── */}
       <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-8">
         <button onClick={() => router.back()} className="w-10 h-10 glass rounded-2xl flex items-center justify-center">

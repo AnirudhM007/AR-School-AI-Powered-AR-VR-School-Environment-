@@ -39,7 +39,7 @@ export interface Badge {
   title: string;
   description: string;
   icon: string;
-  unlockedAt?: Date;
+  unlockedAt?: string;
 }
 
 export interface UserProfile {
@@ -58,8 +58,8 @@ export const USER_PROFILE: UserProfile = {
   level: 5,
   streakDays: 3,
   badges: [
-    { id: 'b1', title: 'First Steps', description: 'View your first 3D model.', icon: '👶', unlockedAt: new Date(Date.now() - 86400000 * 5) },
-    { id: 'b2', title: 'Biology Whiz', description: 'Score 100% on a Biology quiz.', icon: '🧬', unlockedAt: new Date(Date.now() - 86400000 * 2) },
+    { id: 'b1', title: 'First Steps', description: 'View your first 3D model.', icon: '👶', unlockedAt: '2026-05-01T12:00:00Z' },
+    { id: 'b2', title: 'Biology Whiz', description: 'Score 100% on a Biology quiz.', icon: '🧬', unlockedAt: '2026-05-03T15:30:00Z' },
     { id: 'b3', title: 'Space Ranger', description: 'Explore all space models.', icon: '🚀' }, // Locked
   ],
 };
