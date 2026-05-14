@@ -128,12 +128,15 @@ export default function ModelCanvas({
           />
         </Suspense>
 
-        <OrbitControls
-          enablePan={false}
-          minDistance={2}
-          maxDistance={8}
-          makeDefault
-        />
+        {/* Desktop Controls */}
+        {!xrSession && (
+          <OrbitControls
+            enablePan={false}
+            minDistance={2}
+            maxDistance={8}
+            makeDefault
+          />
+        )}
       </Canvas>
 
       {/* Rotate toggle button */}
