@@ -4,146 +4,114 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import {
   ArrowLeft,
-  User,
-  Settings,
-  Cpu,
+  ChevronRight,
   Database,
   HelpCircle,
   Info,
   LogOut,
-  ChevronRight,
+  Settings,
+  Shield,
+  Sparkles,
+  User,
 } from 'lucide-react';
 import GlassCard from '@/components/GlassCard';
 
-const SETTINGS_SECTIONS = [
-  {
-    title: 'Account',
-    items: [
-      { icon: User,      label: 'Account',       subtitle: 'student@arschool.app', chevron: true },
-    ],
-  },
-  {
-    title: 'Preferences',
-    items: [
-      { icon: Settings,  label: 'App Settings',  subtitle: 'Theme, notifications', chevron: true },
-      { icon: Cpu,       label: 'AR Preferences', subtitle: 'Placement, quality',   chevron: true },
-    ],
-  },
-  {
-    title: 'Data',
-    items: [
-      { icon: Database,  label: 'Data & Storage', subtitle: 'Clear cache, manage', chevron: true },
-    ],
-  },
-  {
-    title: 'Support',
-    items: [
-      { icon: HelpCircle, label: 'Help & Support', subtitle: 'FAQs, contact us',  chevron: true },
-      { icon: Info,        label: 'About AR School', subtitle: 'v1.0.0 · Web Edition', chevron: false },
-    ],
-  },
+const settingsItems = [
+  { icon: User, label: 'Account', subtitle: 'Profile, class, connected devices' },
+  { icon: Settings, label: 'App Settings', subtitle: 'Notifications, motion, audio' },
+  { icon: Sparkles, label: 'AR Preferences', subtitle: 'Placement hints, interaction overlays' },
+  { icon: Database, label: 'Data & Storage', subtitle: 'Offline cache and downloaded assets' },
+  { icon: HelpCircle, label: 'Help & Support', subtitle: 'Guides, contact, troubleshooting' },
+  { icon: Info, label: 'About AR School', subtitle: 'Version 1.0.0 Web Edition' },
 ];
-
-const containerVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.08 } },
-};
-const itemVariants = {
-  hidden: { opacity: 0, x: -16 },
-  show: { opacity: 1, x: 0, transition: { type: 'spring', stiffness: 350, damping: 25 } },
-};
 
 export default function SettingsPage() {
   return (
-    <main className="page-shell px-5 pt-12 pb-24">
-      {/* ── Header ── */}
-      <motion.div
-        initial={{ opacity: 0, y: -16 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center gap-3 mb-6"
-      >
-        <Link href="/">
-          <motion.div
-            whileTap={{ scale: 0.85 }}
-            className="w-10 h-10 glass rounded-2xl flex items-center justify-center"
-          >
-            <ArrowLeft size={18} className="text-white/70" />
-          </motion.div>
-        </Link>
-        <h1 className="text-white font-bold text-xl">Settings</h1>
-      </motion.div>
-
-      {/* ── Profile Card ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="mb-6"
-      >
-        <GlassCard variant="purple" className="p-4 flex items-center gap-4" tap={false}>
-          <div className="w-14 h-14 rounded-3xl bg-gradient-to-br from-brand-purple to-brand-indigo flex items-center justify-center text-2xl shadow-glow-sm">
-            🎓
-          </div>
-          <div className="flex-1">
-            <p className="text-white font-bold text-base">Student Name</p>
-            <p className="text-white/50 text-xs">student@arschool.app</p>
-            <div className="flex gap-2 mt-2">
-              <span className="text-[10px] px-2 py-0.5 glass-purple rounded-full text-brand-accent">Free Plan</span>
-              <span className="text-[10px] px-2 py-0.5 glass rounded-full text-white/50">Class 6</span>
+    <main className="page-shell px-5 pt-10">
+      <motion.section initial={{ opacity: 0, y: -18 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+        <div className="screen-header mb-3">
+          <div className="flex items-center gap-3">
+            <Link href="/">
+              <div className="glass grid h-11 w-11 place-items-center rounded-[20px]">
+                <ArrowLeft size={18} className="text-white/80" />
+              </div>
+            </Link>
+            <div>
+              <p className="screen-kicker">Settings</p>
+              <h1 className="screen-title">Tune your learning space</h1>
             </div>
           </div>
-          <ChevronRight size={18} className="text-white/30" />
+        </div>
+      </motion.section>
+
+      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }} className="mb-6">
+        <GlassCard variant="purple" className="p-5" glow>
+          <div className="flex items-center gap-4">
+            <div className="grid h-16 w-16 place-items-center rounded-[24px] bg-white/12 text-3xl">🎓</div>
+            <div className="flex-1">
+              <p className="text-lg font-semibold text-white">Student Profile</p>
+              <p className="text-sm text-white/60">student@arschool.app</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/80">
+                  Class 6
+                </span>
+                <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/80">
+                  412 XP
+                </span>
+                <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/80">
+                  7 day streak
+                </span>
+              </div>
+            </div>
+          </div>
         </GlassCard>
       </motion.div>
 
-      {/* ── Settings List ── */}
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
-        className="space-y-5"
-      >
-        {SETTINGS_SECTIONS.map(section => (
-          <motion.div key={section.title} variants={itemVariants}>
-            <p className="text-white/30 text-xs font-semibold uppercase tracking-widest mb-2 pl-1">
-              {section.title}
-            </p>
-            <GlassCard tap={false} hover={false} className="divide-y divide-white/5 overflow-hidden">
-              {section.items.map(({ icon: Icon, label, subtitle, chevron }, i) => (
-                <motion.button
-                  key={label}
-                  whileTap={{ scale: 0.98, backgroundColor: 'rgba(255,255,255,0.04)' }}
-                  className="w-full flex items-center gap-4 px-4 py-3.5 text-left"
-                >
-                  <div className="w-9 h-9 glass-purple rounded-xl flex items-center justify-center">
-                    <Icon size={17} className="text-brand-accent" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-white text-sm font-medium">{label}</p>
-                    <p className="text-white/40 text-xs mt-0.5">{subtitle}</p>
-                  </div>
-                  {chevron && <ChevronRight size={16} className="text-white/25" />}
-                </motion.button>
-              ))}
-            </GlassCard>
-          </motion.div>
-        ))}
-
-        {/* Logout */}
-        <motion.div variants={itemVariants}>
-          <GlassCard tap hover className="overflow-hidden">
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              className="w-full flex items-center gap-4 px-4 py-3.5"
-            >
-              <div className="w-9 h-9 bg-red-500/15 border border-red-500/25 rounded-xl flex items-center justify-center">
-                <LogOut size={17} className="text-red-400" />
+      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-5">
+        <GlassCard className="divide-y divide-white/5 overflow-hidden" tap={false} hover={false}>
+          {settingsItems.map(({ icon: Icon, label, subtitle }) => (
+            <button key={label} className="flex w-full items-center gap-4 px-4 py-4 text-left transition hover:bg-white/[0.02]">
+              <div className="glass-purple grid h-11 w-11 place-items-center rounded-[18px]">
+                <Icon size={18} className="text-brand-accent" />
               </div>
-              <span className="text-red-400 text-sm font-semibold">Logout</span>
-            </motion.button>
-          </GlassCard>
-        </motion.div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-white">{label}</p>
+                <p className="mt-0.5 text-xs text-white/45">{subtitle}</p>
+              </div>
+              <ChevronRight size={16} className="text-white/30" />
+            </button>
+          ))}
+        </GlassCard>
       </motion.div>
+
+      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14 }} className="mb-5">
+        <GlassCard className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="glass grid h-11 w-11 place-items-center rounded-[18px]">
+              <Shield size={18} className="text-brand-cyan" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-white">Privacy and safety</p>
+              <p className="text-xs text-white/45">AR sessions stay in-browser and your mock progress remains local for now.</p>
+            </div>
+          </div>
+        </GlassCard>
+      </motion.div>
+
+      <motion.button
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.18 }}
+        className="glass flex w-full items-center gap-4 rounded-[28px] px-4 py-4 text-left"
+      >
+        <div className="grid h-11 w-11 place-items-center rounded-[18px] border border-red-400/30 bg-red-500/10">
+          <LogOut size={18} className="text-red-300" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-red-300">Logout</p>
+          <p className="text-xs text-red-200/60">Return to guest mode</p>
+        </div>
+      </motion.button>
     </main>
   );
 }

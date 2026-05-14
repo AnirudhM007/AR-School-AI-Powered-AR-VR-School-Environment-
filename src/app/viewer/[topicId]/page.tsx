@@ -1,16 +1,16 @@
 'use client';
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Heart, Info, RotateCw, ZoomIn, Maximize2, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Heart, Info, Maximize2, RotateCw, Sparkles, ZoomIn } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import GlassCard from '@/components/GlassCard';
 import FloatingButton from '@/components/FloatingButton';
-import { getTopicById } from '@/lib/topics';
+import { buildTopicContext, getTopicById } from '@/lib/topics';
+import { TopicAnnotation } from '@/lib/types';
 
-// Dynamic import (no SSR) — Three.js requires browser APIs
 const ModelCanvas = dynamic(() => import('@/components/ModelCanvas'), { ssr: false });
 
 type ActiveMode = 'info' | 'rotate' | 'zoom' | null;
@@ -22,183 +22,220 @@ export default function ViewerPage() {
   const topic = getTopicById(topicId);
 
   const [liked, setLiked] = useState(false);
-  const [activeMode, setActiveMode] = useState<ActiveMode>(null);
-  const [showInfo, setShowInfo] = useState(false);
+  const [activeMode, setActiveMode] = useState<ActiveMode>('info');
   const [autoRotate, setAutoRotate] = useState(true);
+  const [expandedCanvas, setExpandedCanvas] = useState(false);
+  const [selectedAnnotation, setSelectedAnnotation] = useState<TopicAnnotation | null>(
+    topic?.annotations[0] ?? null,
+  );
+
+  const aiContext = useMemo(
+    () => buildTopicContext(topic, selectedAnnotation?.id),
+    [selectedAnnotation?.id, topic],
+  );
 
   if (!topic) {
     return (
-      <main className="page-shell flex items-center justify-center">
-        <div className="text-center text-white/40">
-          <div className="text-4xl mb-2">😕</div>
-          <p>Topic not found</p>
-          <Link href="/" className="text-brand-accent text-sm mt-2 block">← Home</Link>
-        </div>
+      <main className="page-shell flex items-center justify-center px-5">
+        <GlassCard className="max-w-sm p-6 text-center">
+          <p className="mb-2 text-4xl">404</p>
+          <p className="text-white/60">This lesson could not be found.</p>
+          <Link href="/" className="mt-4 inline-block text-sm font-semibold text-brand-accent">
+            Back home
+          </Link>
+        </GlassCard>
       </main>
     );
   }
 
+  const showHotspots = activeMode === 'info';
+
   const toggleMode = (mode: ActiveMode) => {
     if (mode === 'rotate') {
-      setAutoRotate(r => !r);
-      setActiveMode(prev => (prev === 'rotate' ? null : 'rotate'));
-    } else {
-      setActiveMode(prev => (prev === mode ? null : mode));
-      if (mode === 'info') setShowInfo(true);
+      setAutoRotate((value) => !value);
+      setActiveMode((current) => (current === 'rotate' ? null : 'rotate'));
+      return;
+    }
+
+    if (mode === 'zoom') {
+      setExpandedCanvas((value) => !value);
+      setActiveMode((current) => (current === 'zoom' ? null : 'zoom'));
+      return;
+    }
+
+    setActiveMode((current) => (current === mode ? null : mode));
+    if (mode === 'info' && !selectedAnnotation) {
+      setSelectedAnnotation(topic.annotations[0] ?? null);
     }
   };
 
   return (
-    <main className="page-shell relative flex flex-col">
-      {/* ── Top Bar ── */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between px-5 pt-12 pb-3 z-10 relative"
-      >
-        <button onClick={() => router.back()}>
-          <motion.div
-            whileTap={{ scale: 0.85 }}
-            className="w-10 h-10 glass rounded-2xl flex items-center justify-center"
+    <main className="page-shell px-4 pb-6 pt-8">
+      <motion.section initial={{ opacity: 0, y: -18 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
+        <div className="screen-header">
+          <button onClick={() => router.back()} className="glass grid h-11 w-11 place-items-center rounded-[20px]">
+            <ArrowLeft size={18} className="text-white/80" />
+          </button>
+          <div className="text-center">
+            <p className="screen-kicker">{topic.category}</p>
+            <h1 className="text-lg font-semibold text-white">{topic.title}</h1>
+          </div>
+          <button
+            onClick={() => setLiked((value) => !value)}
+            className="glass grid h-11 w-11 place-items-center rounded-[20px]"
           >
-            <ArrowLeft size={18} className="text-white/70" />
-          </motion.div>
-        </button>
-        <h1 className="text-white font-bold text-base">{topic.title}</h1>
-        <motion.button
-          whileTap={{ scale: 0.75 }}
-          onClick={() => setLiked(l => !l)}
-          className="w-10 h-10 glass rounded-2xl flex items-center justify-center"
-        >
-          <Heart
-            size={18}
-            className={liked ? 'fill-red-500 text-red-500' : 'text-white/50'}
-          />
-        </motion.button>
-      </motion.div>
-
-      {/* ── 3D Canvas ── */}
-      <div className="relative flex-1 min-h-[320px] mx-4">
-        <div className="w-full h-72 relative rounded-3xl overflow-hidden glass">
-          <ModelCanvas modelUrl={topic.modelUrl} autoRotate={autoRotate} />
+            <Heart size={18} className={liked ? 'fill-rose-400 text-rose-400' : 'text-white/55'} />
+          </button>
         </div>
-        <p className="text-center text-white/30 text-xs mt-2">3D Preview · Drag to rotate</p>
+      </motion.section>
 
-        {/* Controls Row */}
-        <div className="flex items-center justify-center gap-3 mt-4">
-          {[
-            { id: 'info' as ActiveMode, label: 'Info',   icon: Info },
-            { id: 'rotate' as ActiveMode, label: 'Rotate', icon: RotateCw },
-            { id: 'zoom' as ActiveMode,   label: 'Zoom',   icon: ZoomIn },
-          ].map(({ id, label, icon: Icon }) => (
+      <motion.section initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
+        <GlassCard className="overflow-hidden p-3">
+          <div
+            className={`relative overflow-hidden rounded-[28px] bg-gradient-to-br ${topic.color} ${
+              expandedCanvas ? 'h-[28rem]' : 'h-[22rem]'
+            }`}
+          >
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.28),transparent_35%)]" />
+            <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center">
+              <div className="rounded-full border border-white/12 bg-black/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/70">
+                3D Preview
+              </div>
+              <div className="mt-4 text-[5rem] opacity-20 drop-shadow-[0_20px_40px_rgba(0,0,0,0.28)]">
+                {topic.thumbnail}
+              </div>
+              <p className="mt-2 max-w-xs text-center text-sm text-white/45">
+                Rotate the lesson, inspect labeled parts, and switch to AR when ready.
+              </p>
+            </div>
+            <ModelCanvas
+              modelUrl={topic.modelUrl}
+              autoRotate={autoRotate}
+              annotations={topic.annotations}
+              showHotspots={showHotspots}
+              selectedAnnotationId={selectedAnnotation?.id}
+              onSelectAnnotation={setSelectedAnnotation}
+              modelScale={topic.modelScale}
+              placeholder={topic.thumbnail}
+            />
+          </div>
+          <div className="flex items-center justify-center gap-3 px-2 pb-1 pt-4">
             <FloatingButton
-              key={id}
               size="md"
               variant="glass"
-              active={activeMode === id || (id === 'rotate' && autoRotate)}
-              onClick={() => toggleMode(id)}
-              icon={<Icon size={18} />}
-              label={label}
+              active={activeMode === 'info'}
+              onClick={() => toggleMode('info')}
+              icon={<Info size={18} />}
+              label="Info"
             />
-          ))}
-
-          {/* AR View — primary */}
-          <Link href={`/ar/${topic.id}`}>
-            <motion.div
-              whileHover={{ scale: 1.06 }}
-              whileTap={{ scale: 0.88 }}
-              className="w-14 h-14 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-brand-purple to-brand-indigo rounded-2xl shadow-glow-sm cursor-pointer"
-            >
-              <Maximize2 size={18} className="text-white" />
-              <span className="text-[9px] text-white font-bold tracking-wide">AR View</span>
-            </motion.div>
-          </Link>
-        </div>
-      </div>
-
-      {/* ── Info Panel (slide up) ── */}
-      <AnimatePresence>
-        {showInfo && (
-          <motion.div
-            initial={{ y: '100%', opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: '100%', opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-            className="fixed bottom-0 left-0 right-0 z-50"
-          >
-            <GlassCard variant="strong" className="p-5 pb-24 border-t border-white/10 shadow-2xl bg-[#080815]/95 backdrop-blur-3xl rounded-t-3xl rounded-b-none">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-white font-bold text-base">About {topic.title}</h2>
-                <button onClick={() => setShowInfo(false)}>
-                  <ChevronDown size={20} className="text-white/50" />
-                </button>
-              </div>
-              <p className="text-white/70 text-sm leading-relaxed">{topic.description}</p>
-              <div className="flex gap-2 mt-4">
-                <Link href={`/ai?topic=${topic.id}`} className="flex-1">
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    className="w-full py-2.5 bg-gradient-to-r from-brand-purple to-brand-indigo rounded-2xl text-white text-sm font-semibold"
-                  >
-                    Ask AI →
-                  </motion.button>
-                </Link>
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowInfo(false)}
-                  className="px-4 py-2.5 glass rounded-2xl text-white/60 text-sm"
-                >
-                  Close
-                </motion.button>
-              </div>
-            </GlassCard>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── AI Quick Link ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="px-5 mt-4"
-      >
-        <GlassCard className="p-4">
-          <h3 className="text-white font-semibold text-sm mb-1">About {topic.title}</h3>
-          <p className="text-white/55 text-xs leading-relaxed line-clamp-3">
-            {topic.description}
-          </p>
-          <button
-            onClick={() => setShowInfo(true)}
-            className="text-brand-accent text-xs font-semibold mt-2 inline-block"
-          >
-            Read More →
-          </button>
+            <FloatingButton
+              size="md"
+              variant="glass"
+              active={activeMode === 'rotate' || autoRotate}
+              onClick={() => toggleMode('rotate')}
+              icon={<RotateCw size={18} />}
+              label="Rotate"
+            />
+            <FloatingButton
+              size="md"
+              variant="glass"
+              active={activeMode === 'zoom' || expandedCanvas}
+              onClick={() => toggleMode('zoom')}
+              icon={<ZoomIn size={18} />}
+              label="Zoom"
+            />
+            <Link href={`/ar/${topic.id}`}>
+              <FloatingButton
+                size="md"
+                variant="primary"
+                icon={<Maximize2 size={18} />}
+                label="AR View"
+              />
+            </Link>
+          </div>
         </GlassCard>
-      </motion.div>
+      </motion.section>
 
-      {/* ── Quiz CTA ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="px-5 mt-4 pb-4"
-      >
-        <Link href={`/quiz/${topic.id}`}>
-          <GlassCard variant="purple" className="p-4 flex items-center gap-4" glow>
-            <div className="text-3xl bg-white/10 w-12 h-12 rounded-xl flex items-center justify-center">
-              🏆
+      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="mb-4">
+        <GlassCard variant="strong" className="p-5">
+          <div className="mb-3 flex items-start justify-between gap-4">
+            <div>
+              <p className="screen-kicker">{topic.heroLabel}</p>
+              <h2 className="mt-2 text-xl font-semibold text-white">{selectedAnnotation?.label ?? `About ${topic.title}`}</h2>
             </div>
-            <div className="flex-1">
-              <h3 className="text-white font-bold text-sm">Test Your Knowledge</h3>
-              <p className="text-white/60 text-xs mt-0.5">Earn XP and level up!</p>
+            <div className="glass-purple rounded-full px-3 py-1 text-[11px] font-semibold text-brand-accent">
+              Tap model pins
             </div>
-            <span className="text-brand-accent text-xs font-bold px-3 py-1.5 glass-strong rounded-full">
-              Play →
-            </span>
-          </GlassCard>
-        </Link>
-      </motion.div>
+          </div>
+
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={selectedAnnotation?.id ?? 'topic-description'}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              className="text-sm leading-6 text-white/68"
+            >
+              {selectedAnnotation?.description ?? topic.description}
+            </motion.p>
+          </AnimatePresence>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {topic.annotations.map((annotation) => (
+              <button
+                key={annotation.id}
+                onClick={() => {
+                  setActiveMode('info');
+                  setSelectedAnnotation(annotation);
+                }}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                  selectedAnnotation?.id === annotation.id
+                    ? 'glass-purple text-brand-accent'
+                    : 'glass text-white/60'
+                }`}
+              >
+                {annotation.label}
+              </button>
+            ))}
+          </div>
+        </GlassCard>
+      </motion.section>
+
+      <motion.section initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="grid gap-4 sm:grid-cols-[1.2fr_0.8fr]">
+        <GlassCard className="p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <Sparkles size={16} className="text-brand-cyan" />
+            <h3 className="text-lg font-semibold text-white">Ask AI while viewing</h3>
+          </div>
+          <p className="mb-4 text-sm leading-6 text-white/60">
+            Jump into a contextual explanation tied to this lesson and the selected part.
+          </p>
+          <Link
+            href={{
+              pathname: '/ai',
+              query: {
+                topic: topic.id,
+                part: aiContext?.selectedLabel ? selectedAnnotation?.id : undefined,
+                prompt: aiContext?.prompt,
+              },
+            }}
+            className="inline-flex rounded-full bg-gradient-primary px-4 py-2.5 text-sm font-semibold text-white shadow-glow-sm"
+          >
+            Ask about {selectedAnnotation?.label ?? topic.title}
+          </Link>
+        </GlassCard>
+
+        <GlassCard className="p-5">
+          <p className="screen-kicker mb-3">Related Topics</p>
+          <div className="flex flex-wrap gap-2">
+            {topic.relatedTopics.map((entry) => (
+              <span key={entry} className="glass-outline rounded-full px-3 py-1.5 text-xs font-semibold text-white/70">
+                {entry}
+              </span>
+            ))}
+          </div>
+        </GlassCard>
+      </motion.section>
     </main>
   );
 }

@@ -1,12 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Bell, User } from 'lucide-react';
+import { Menu, Search, Sparkles } from 'lucide-react';
 import SearchBar from '@/components/SearchBar';
 import GlassCard from '@/components/GlassCard';
-import { CLASSES } from '@/lib/topics';
-import { useState } from 'react';
+import { CLASSES, TOPICS } from '@/lib/topics';
 
 const containerVariants = {
   hidden: {},
@@ -14,115 +14,152 @@ const containerVariants = {
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 20, scale: 0.95 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 350, damping: 25 } },
+  hidden: { opacity: 0, y: 20, scale: 0.96 },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: 'spring', stiffness: 280, damping: 24 },
+  },
 };
 
 export default function HomePage() {
   const [query, setQuery] = useState('');
-
-  const filtered = CLASSES.filter(c =>
-    query === '' || c.label.toLowerCase().includes(query.toLowerCase())
+  const filteredClasses = CLASSES.filter((item) =>
+    query === '' ? true : item.label.toLowerCase().includes(query.toLowerCase()),
   );
+  const featuredTopic = TOPICS[0];
+  const spotlightTopics = TOPICS.slice(1, 4);
 
   return (
-    <main className="page-shell px-5 pt-12 pb-24">
-      {/* ── Header ── */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
+    <main className="page-shell px-5 pt-10">
+      <motion.section
+        initial={{ opacity: 0, y: -18 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex items-center justify-between mb-6"
+        className="screen-header mb-6"
       >
-        <div>
-          <h1 className="text-2xl font-bold text-white">
-            Hello, Student <span className="animate-float inline-block">👋</span>
-          </h1>
-          <p className="text-white/50 text-sm mt-0.5">What do you want to learn today?</p>
-        </div>
-        <div className="flex gap-2">
-          <motion.button
-            whileTap={{ scale: 0.85 }}
-            className="w-10 h-10 glass rounded-2xl flex items-center justify-center relative"
-          >
-            <Bell size={18} className="text-white/70" />
-            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-brand-accent" />
+        <div className="flex items-center gap-3">
+          <motion.button whileTap={{ scale: 0.92 }} className="glass h-11 w-11 rounded-[20px] grid place-items-center">
+            <Menu size={18} className="text-white/80" />
           </motion.button>
-          <motion.button
-            whileTap={{ scale: 0.85 }}
-            className="w-10 h-10 bg-gradient-to-br from-brand-purple to-brand-indigo rounded-2xl flex items-center justify-center"
-          >
-            <User size={18} className="text-white" />
-          </motion.button>
+          <div>
+            <p className="screen-kicker">AR School</p>
+            <h1 className="screen-title text-gradient">Hello, Student!</h1>
+          </div>
         </div>
-      </motion.div>
+        <div className="glass-purple flex h-11 w-11 items-center justify-center rounded-[20px] text-lg">
+          🧑🏽
+        </div>
+      </motion.section>
 
-      {/* ── Search ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
+      <motion.p
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
-        className="mb-6"
+        transition={{ delay: 0.08 }}
+        className="screen-subtitle mb-5 max-w-sm"
       >
+        Pick a class, open a 3D lesson, and jump into a smooth AR learning flow with instant explanations.
+      </motion.p>
+
+      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="mb-6">
         <SearchBar
-          placeholder="Search topics..."
+          placeholder="Search classes, topics, or concepts..."
           onSearch={setQuery}
           className="w-full"
         />
       </motion.div>
 
-      {/* ── Featured Banner ── */}
       <motion.div
-        initial={{ opacity: 0, y: 16 }}
+        initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
+        transition={{ delay: 0.16 }}
         className="mb-6"
       >
-        <Link href="/topics/6">
-          <GlassCard variant="purple" className="p-5 relative overflow-hidden cursor-pointer" glow>
-            {/* Glow blob */}
-            <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full bg-brand-purple/20 blur-3xl pointer-events-none" />
-            <div className="flex items-center gap-4">
-              <div className="text-5xl">🔬</div>
-              <div>
-                <span className="text-xs text-brand-accent font-semibold tracking-widest uppercase">Featured</span>
-                <h2 className="text-white font-bold text-lg mt-0.5">Class 6 Science</h2>
-                <p className="text-white/50 text-xs mt-1">Heart, Circuits & More →</p>
+        <Link href={`/viewer/${featuredTopic.id}`}>
+          <GlassCard variant="purple" className="overflow-hidden p-5" glow>
+            <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-white/10 to-transparent" />
+            <div className="relative flex items-start justify-between gap-4">
+              <div className="max-w-[70%]">
+                <p className="screen-kicker text-white/70">{featuredTopic.heroLabel}</p>
+                <h2 className="mt-2 text-2xl font-semibold text-white">{featuredTopic.title}</h2>
+                <p className="mt-2 text-sm text-white/70">{featuredTopic.subtitle}</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {featuredTopic.stats.map((stat) => (
+                    <span
+                      key={stat}
+                      className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/85"
+                    >
+                      {stat}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="relative flex h-24 w-24 items-center justify-center rounded-[28px] border border-white/12 bg-white/10 text-6xl shadow-glow-sm">
+                {featuredTopic.thumbnail}
               </div>
             </div>
           </GlassCard>
         </Link>
       </motion.div>
 
-      {/* ── Class Grid ── */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.25 }}
-      >
-        <h2 className="text-white font-semibold text-base mb-3">Explore by Class</h2>
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="show"
-          className="grid grid-cols-3 gap-3"
-        >
-          {filtered.map(cls => (
+      <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.22 }} className="mb-7">
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-white">Explore by Class</h2>
+            <p className="text-sm text-white/45">Choose a grade to open curated topics.</p>
+          </div>
+          <Link href="/library" className="text-sm font-semibold text-brand-accent">
+            See all
+          </Link>
+        </div>
+
+        <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-3 gap-3">
+          {filteredClasses.map((cls) => (
             <motion.div key={cls.id} variants={itemVariants}>
               <Link href={`/topics/${cls.id}`}>
-                <GlassCard className="p-4 flex flex-col items-center gap-2 cursor-pointer" tap>
-                  <div
-                    className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${cls.color} flex items-center justify-center text-2xl shadow-glow-sm`}
-                  >
+                <GlassCard className="p-3.5">
+                  <div className={`mb-3 flex h-14 w-14 items-center justify-center rounded-[20px] bg-gradient-to-br ${cls.color} text-2xl shadow-glow-sm`}>
                     {cls.emoji}
                   </div>
-                  <span className="text-white/80 text-xs font-medium text-center">{cls.label}</span>
+                  <h3 className="text-sm font-semibold text-white">{cls.label}</h3>
+                  <p className="mt-1 text-[11px] leading-4 text-white/45">{cls.description}</p>
                 </GlassCard>
               </Link>
             </motion.div>
           ))}
         </motion.div>
-      </motion.div>
+      </motion.section>
+
+      <motion.section
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.28 }}
+      >
+        <div className="mb-3 flex items-center gap-2">
+          <Sparkles size={16} className="text-brand-cyan" />
+          <h2 className="text-lg font-semibold text-white">Trending Lessons</h2>
+        </div>
+        <div className="space-y-3">
+          {spotlightTopics.map((topic) => (
+            <Link href={`/viewer/${topic.id}`} key={topic.id}>
+              <GlassCard className="p-4">
+                <div className="flex items-center gap-4">
+                  <div className={`flex h-14 w-14 items-center justify-center rounded-[20px] bg-gradient-to-br ${topic.color} text-3xl shadow-glow-sm`}>
+                    {topic.thumbnail}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-base font-semibold text-white">{topic.title}</h3>
+                    <p className="truncate text-sm text-white/50">{topic.subtitle}</p>
+                  </div>
+                  <div className="glass-outline rounded-full px-3 py-1 text-[11px] font-semibold text-white/70">
+                    {topic.category}
+                  </div>
+                </div>
+              </GlassCard>
+            </Link>
+          ))}
+        </div>
+      </motion.section>
     </main>
   );
 }

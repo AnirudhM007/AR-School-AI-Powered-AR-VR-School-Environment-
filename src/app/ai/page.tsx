@@ -1,55 +1,59 @@
 'use client';
 
+import { Suspense } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { ArrowLeft, Bot } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import { ArrowLeft, Bot } from 'lucide-react';
 import ChatUI from '@/components/ChatUI';
 import { getTopicById } from '@/lib/topics';
 
 function AIContent() {
   const searchParams = useSearchParams();
   const topicId = searchParams.get('topic') ?? '';
-  const topic = topicId ? getTopicById(topicId) : undefined;
+  const annotationId = searchParams.get('part');
+  const prompt = searchParams.get('prompt');
+  const topic = getTopicById(topicId);
+  const annotation = annotationId ? topic?.annotations.find((item) => item.id === annotationId) : undefined;
 
   return (
-    <main className="page-shell flex flex-col h-dvh">
-      {/* ── Header ── */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center gap-3 px-5 pt-12 pb-4 flex-shrink-0"
-      >
-        <Link href={topic ? `/viewer/${topic.id}` : '/'}>
-          <motion.div
-            whileTap={{ scale: 0.85 }}
-            className="w-10 h-10 glass rounded-2xl flex items-center justify-center"
-          >
-            <ArrowLeft size={18} className="text-white/70" />
-          </motion.div>
-        </Link>
-        <div className="flex-1 flex items-center gap-2">
-          <div className="w-8 h-8 rounded-2xl bg-gradient-to-br from-brand-purple to-brand-indigo flex items-center justify-center">
-            <Bot size={16} className="text-white" />
+    <main className="page-shell flex h-dvh flex-col px-4 pb-4 pt-8">
+      <motion.section initial={{ opacity: 0, y: -18 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
+        <div className="screen-header">
+          <Link href={topic ? `/viewer/${topic.id}` : '/'}>
+            <div className="glass grid h-11 w-11 place-items-center rounded-[20px]">
+              <ArrowLeft size={18} className="text-white/80" />
+            </div>
+          </Link>
+          <div className="flex items-center gap-3">
+            <div className="glass-purple grid h-11 w-11 place-items-center rounded-[20px]">
+              <Bot size={18} className="text-white" />
+            </div>
+            <div>
+              <p className="screen-kicker">AI Assistant</p>
+              <h1 className="text-lg font-semibold text-white">{topic?.title ?? 'Learning chat'}</h1>
+            </div>
           </div>
-          <div>
-            <h1 className="text-white font-bold text-base">AI Assistant</h1>
-            {topic && <p className="text-white/40 text-xs">{topic.title}</p>}
-          </div>
+          <div className="glass rounded-full px-3 py-1 text-xs font-semibold text-white/55">Context on</div>
         </div>
-        <motion.button
-          whileTap={{ scale: 0.85 }}
-          className="px-3 py-1.5 glass rounded-xl text-white/50 text-xs flex items-center gap-1"
-        >
-          <span>Model</span>
-          <span className="text-brand-accent">▾</span>
-        </motion.button>
+      </motion.section>
+
+      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="mb-4">
+        <div className="glass rounded-[28px] px-4 py-3 text-sm text-white/65">
+          {annotation
+            ? `Focused on ${annotation.label}. Ask a detailed question or use the suggested prompts below.`
+            : 'Ask questions about the current topic, its structure, or how it works in real life.'}
+        </div>
       </motion.div>
 
-      {/* ── Chat ── */}
-      <div className="flex-1 overflow-hidden">
-        <ChatUI topic={topic?.title} />
+      <div className="glass-strong min-h-0 flex-1 rounded-[32px] pt-4">
+        <ChatUI
+          topic={topic?.title}
+          topicId={topic?.id}
+          selectedLabel={annotation?.label}
+          initialPrompt={prompt}
+          quickQuestions={topic?.quickQuestions}
+        />
       </div>
     </main>
   );
@@ -57,11 +61,15 @@ function AIContent() {
 
 export default function AIPage() {
   return (
-    <Suspense fallback={
-      <div className="page-shell flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-brand-accent border-t-transparent animate-spin" />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="page-shell flex items-center justify-center">
+          <div className="glass-strong rounded-full p-5">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-accent border-t-transparent" />
+          </div>
+        </div>
+      }
+    >
       <AIContent />
     </Suspense>
   );

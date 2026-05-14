@@ -15,10 +15,15 @@ const NAV_ITEMS = [
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const shouldHide = ['/viewer/', '/ar/', '/ai', '/quiz/'].some((segment) => pathname.startsWith(segment));
+
+  if (shouldHide) {
+    return null;
+  }
 
   return (
     <nav className="bottom-nav">
-      <div className="glass-strong mx-3 mb-3 rounded-3xl px-2 py-2">
+      <div className="mx-3 mb-3 rounded-[30px] glass-strong px-2 py-2.5">
         <div className="flex items-center justify-around">
           {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
             const isActive =
@@ -28,16 +33,16 @@ export default function BottomNav() {
               <Link key={href} href={href} className="flex-1">
                 <motion.div
                   className="flex flex-col items-center gap-1 py-1 cursor-pointer"
-                  whileTap={{ scale: 0.85 }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                  whileTap={{ scale: 0.92 }}
+                  transition={{ type: 'spring', stiffness: 420, damping: 24 }}
                 >
                   <div className="relative">
                     {isActive && (
                       <motion.div
                         layoutId="nav-indicator"
-                        className="absolute inset-0 rounded-xl bg-brand-purple/30"
-                        style={{ inset: '-6px -8px' }}
-                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                        className="absolute inset-0 rounded-2xl bg-gradient-to-br from-brand-purple/35 to-brand-cyan/15"
+                        style={{ inset: '-7px -10px' }}
+                        transition={{ type: 'spring', stiffness: 320, damping: 28 }}
                       />
                     )}
                     <Icon

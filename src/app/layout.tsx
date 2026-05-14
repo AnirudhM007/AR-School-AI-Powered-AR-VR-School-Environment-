@@ -1,10 +1,22 @@
 import type { Metadata, Viewport } from 'next';
+import { Manrope, Sora } from 'next/font/google';
 import './globals.css';
 import BottomNav from '@/components/BottomNav';
 
+const bodyFont = Manrope({
+  subsets: ['latin'],
+  variable: '--font-body',
+});
+
+const headingFont = Sora({
+  subsets: ['latin'],
+  variable: '--font-heading',
+});
+
 export const metadata: Metadata = {
-  title: 'AR School – Learn with Augmented Reality',
-  description: 'An immersive AR-powered educational platform. Explore 3D models, interact with AR objects, and get AI explanations — all in your browser.',
+  title: 'AR School - Learn with Augmented Reality',
+  description:
+    'An immersive AR-powered educational platform. Explore 3D models, interact with AR objects, and get AI explanations in your browser.',
   keywords: ['AR', 'education', 'augmented reality', 'learning', '3D models', 'WebXR'],
   manifest: '/manifest.json',
   appleWebApp: {
@@ -20,7 +32,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#7C3AED',
+  themeColor: '#6c7cff',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -30,16 +42,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
-          rel="stylesheet"
-        />
-        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-      </head>
-      <body className="gradient-bg min-h-dvh" suppressHydrationWarning>
+      <body
+        className={`${bodyFont.variable} ${headingFont.variable} min-h-dvh bg-brand-bg text-white antialiased`}
+        suppressHydrationWarning
+      >
         {children}
         <BottomNav />
       </body>

@@ -26,7 +26,7 @@ export default function FloatingButton({
 }: FloatingButtonProps) {
   const base = clsx(
     'flex flex-col items-center justify-center gap-1 cursor-pointer select-none outline-none',
-    'rounded-2xl transition-colors duration-200',
+    'rounded-[22px] transition-colors duration-200',
     {
       // sizes
       'w-10 h-10 text-xs': size === 'sm',
@@ -36,7 +36,7 @@ export default function FloatingButton({
       'bg-gradient-to-br from-brand-purple to-brand-indigo text-white shadow-glow-sm':
         variant === 'primary',
       'glass text-white/80 hover:text-white': variant === 'glass' && !active,
-      'glass-purple text-brand-accent': variant === 'glass' && active,
+      'glass-purple text-brand-accent glow-border': variant === 'glass' && active,
       'bg-red-500/20 border border-red-500/30 text-red-400': variant === 'danger',
     },
     className
@@ -45,9 +45,9 @@ export default function FloatingButton({
   return (
     <motion.button
       className={base}
-      whileHover={{ scale: 1.08, y: -1 }}
-      whileTap={{ scale: 0.88 }}
-      transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+      whileHover={{ scale: 1.05, y: -1 }}
+      whileTap={{ scale: 0.9 }}
+      transition={{ type: 'spring', stiffness: 420, damping: 24 }}
       {...props}
     >
       {icon && <span className="text-lg leading-none">{icon}</span>}

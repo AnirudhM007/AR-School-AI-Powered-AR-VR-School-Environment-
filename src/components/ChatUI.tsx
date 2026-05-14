@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Mic, Bot, User } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Bot, Send, Sparkles, User } from 'lucide-react';
 
 export interface ChatMessage {
   id: string;
@@ -14,51 +14,69 @@ export interface ChatMessage {
 
 interface ChatUIProps {
   topic?: string;
+  topicId?: string;
+  selectedLabel?: string | null;
+  initialPrompt?: string | null;
+  quickQuestions?: string[];
 }
 
 const MOCK_RESPONSES: Record<string, { answer: string; relatedTopics: string[] }> = {
   default: {
-    answer: "Great question! I'm here to help you learn. Could you be more specific about what you'd like to know?",
-    relatedTopics: ['Biology', 'Science'],
+    answer:
+      "Great question. I can explain the model you're viewing, connect it to class concepts, and point you to the next idea to explore.",
+    relatedTopics: ['Science', 'Observation', 'Revision'],
   },
   heart: {
-    answer: "The human heart is a muscular organ that pumps blood throughout the body, delivering oxygen and nutrients to tissues and removing waste. It has four chambers: two atria and two ventricles. The heart works continuously to keep us alive — beating about 100,000 times per day!",
-    relatedTopics: ['Circulatory System', 'Blood', 'Veins & Arteries'],
+    answer:
+      'The human heart pumps blood through the body using four chambers. The atria receive blood, while the ventricles pump it out. This keeps oxygen and nutrients moving to tissues continuously.',
+    relatedTopics: ['Circulatory System', 'Blood Flow', 'Arteries'],
   },
   solar: {
-    answer: "The Solar System consists of the Sun and everything bound to it by gravity — 8 planets, dwarf planets, moons, asteroids, and comets. The Sun contains 99.86% of all mass in the Solar System. The planets orbit in an elliptical path due to gravitational forces.",
-    relatedTopics: ['Planets', 'Gravity', 'Space'],
+    answer:
+      'The Solar System is centered around the Sun. Gravity keeps planets in orbit, and the planets differ in size, composition, and distance from the Sun.',
+    relatedTopics: ['Planets', 'Gravity', 'Orbits'],
   },
 };
 
-function getMockResponse(question: string, topic?: string): typeof MOCK_RESPONSES['default'] {
-  const q = question.toLowerCase();
-  if (q.includes('heart') || topic?.toLowerCase().includes('heart')) return MOCK_RESPONSES.heart;
-  if (q.includes('solar') || q.includes('planet') || topic?.toLowerCase().includes('solar')) return MOCK_RESPONSES.solar;
+function getMockResponse(question: string, topic?: string) {
+  const input = `${question} ${topic ?? ''}`.toLowerCase();
+  if (input.includes('heart') || input.includes('aorta')) return MOCK_RESPONSES.heart;
+  if (input.includes('solar') || input.includes('planet') || input.includes('sun')) return MOCK_RESPONSES.solar;
   return MOCK_RESPONSES.default;
 }
 
-export default function ChatUI({ topic }: ChatUIProps) {
+export default function ChatUI({
+  topic,
+  topicId,
+  selectedLabel,
+  initialPrompt,
+  quickQuestions = [],
+}: ChatUIProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '0',
       role: 'assistant',
-      content: `Hi! I'm your AR School AI assistant${topic ? ` for **${topic}**` : ''}. What would you like to learn today? 🎓`,
+      content: selectedLabel
+        ? `You are studying ${topic}. I can focus on ${selectedLabel} or answer broader questions about the model.`
+        : `You are exploring ${topic ?? 'AR School'}. Ask me anything and I will explain it in a student-friendly way.`,
       timestamp: new Date(),
     },
   ]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState(initialPrompt ?? '');
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, loading]);
 
-  const sendMessage = async () => {
-    if (!input.trim() || loading) return;
-    const question = input.trim();
-    setInput('');
+  const sendMessage = async (preset?: string) => {
+    const question = (preset ?? input).trim();
+    if (!question || loading) return;
+
+    if (!preset) {
+      setInput('');
+    }
 
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
@@ -66,22 +84,31 @@ export default function ChatUI({ topic }: ChatUIProps) {
       content: question,
       timestamp: new Date(),
     };
-    setMessages(prev => [...prev, userMsg]);
+
+    setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
 
-    // Try real API first, fall back to mock
     try {
-      const res = await fetch('/api/explain', {
+      const response = await fetch('/api/explain', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, topic }),
+        body: JSON.stringify({
+          question,
+          topic,
+          topicId,
+          selectedLabel,
+        }),
       });
-      if (!res.ok) throw new Error('API Error');
-      const data = await res.json();
-      setMessages(prev => [
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch explanation');
+      }
+
+      const data = await response.json();
+      setMessages((prev) => [
         ...prev,
         {
-          id: (Date.now() + 1).toString(),
+          id: `${Date.now()}-assistant`,
           role: 'assistant',
           content: data.answer,
           timestamp: new Date(),
@@ -90,128 +117,148 @@ export default function ChatUI({ topic }: ChatUIProps) {
       ]);
     } catch {
       const mock = getMockResponse(question, topic);
-      setTimeout(() => {
-        setMessages(prev => [
-          ...prev,
-          {
-            id: (Date.now() + 1).toString(),
-            role: 'assistant',
-            content: mock.answer,
-            timestamp: new Date(),
-            relatedTopics: mock.relatedTopics,
-          },
-        ]);
-        setLoading(false);
-      }, 1200);
-      return;
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}-assistant`,
+          role: 'assistant',
+          content: mock.answer,
+          timestamp: new Date(),
+          relatedTopics: mock.relatedTopics,
+        },
+      ]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
-    <div className="flex flex-col h-full pb-20">
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+    <div className="flex h-full flex-col">
+      <div className="px-5 pb-3">
+        <div className="glass-strong flex items-center gap-3 rounded-[24px] px-4 py-3">
+          <div className="glass-purple grid h-11 w-11 place-items-center rounded-[18px]">
+            <Sparkles size={18} className="text-brand-accent" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-white">{topic ?? 'AI Assistant'}</p>
+            <p className="text-xs text-white/45">
+              {selectedLabel ? `Focused on ${selectedLabel}` : 'Context-aware help while you learn'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-5 pb-4">
         <AnimatePresence initial={false}>
-          {messages.map(msg => (
+          {messages.map((message) => (
             <motion.div
-              key={msg.id}
-              initial={{ opacity: 0, y: 16, scale: 0.95 }}
+              key={message.id}
+              initial={{ opacity: 0, y: 18, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-              className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 24 }}
+              className={`mb-4 flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
             >
-              {/* Avatar */}
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  msg.role === 'assistant'
-                    ? 'bg-gradient-to-br from-brand-purple to-brand-indigo'
-                    : 'glass-purple'
+                className={`grid h-9 w-9 place-items-center rounded-full ${
+                  message.role === 'assistant' ? 'glass-purple' : 'glass'
                 }`}
               >
-                {msg.role === 'assistant' ? (
+                {message.role === 'assistant' ? (
                   <Bot size={16} className="text-white" />
                 ) : (
                   <User size={16} className="text-brand-accent" />
                 )}
               </div>
 
-              {/* Bubble */}
-              <div className={`max-w-[78%] ${msg.role === 'user' ? 'items-end' : 'items-start'} flex flex-col gap-2`}>
+              <div className={`flex max-w-[82%] flex-col gap-2 ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
                 <div
-                  className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
-                    msg.role === 'user'
-                      ? 'bg-gradient-to-br from-brand-purple to-brand-indigo text-white rounded-tr-sm'
-                      : 'glass text-white/90 rounded-tl-sm'
+                  className={`rounded-[24px] px-4 py-3 text-sm leading-6 ${
+                    message.role === 'user'
+                      ? 'bg-gradient-primary text-white shadow-glow-sm'
+                      : 'glass text-white/90'
                   }`}
                 >
-                  {msg.content}
+                  {message.content}
                 </div>
-
-                {/* Related topics chips */}
-                {msg.relatedTopics && msg.relatedTopics.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    <span className="text-xs text-white/40">Related:</span>
-                    {msg.relatedTopics.map(t => (
-                      <span
-                        key={t}
-                        className="text-xs px-2 py-0.5 glass-purple rounded-full text-brand-accent"
-                      >
-                        {t}
+                {message.relatedTopics?.length ? (
+                  <div className="flex flex-wrap gap-2">
+                    {message.relatedTopics.map((entry) => (
+                      <span key={entry} className="glass-outline rounded-full px-2.5 py-1 text-[11px] font-semibold text-white/70">
+                        {entry}
                       </span>
                     ))}
                   </div>
-                )}
+                ) : null}
               </div>
             </motion.div>
           ))}
 
-          {/* Typing indicator */}
-          {loading && (
+          {loading ? (
             <motion.div
-              key="typing"
-              initial={{ opacity: 0, y: 16 }}
+              key="loading"
+              initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="flex gap-3"
+              className="mb-4 flex gap-3"
             >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-purple to-brand-indigo flex items-center justify-center">
+              <div className="glass-purple grid h-9 w-9 place-items-center rounded-full">
                 <Bot size={16} className="text-white" />
               </div>
-              <div className="glass px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-1">
-                {[0, 1, 2].map(i => (
-                  <motion.div
-                    key={i}
-                    className="w-2 h-2 rounded-full bg-brand-accent"
-                    animate={{ y: [0, -5, 0] }}
-                    transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.15 }}
+              <div className="glass flex items-center gap-1 rounded-[24px] px-4 py-3">
+                {[0, 1, 2].map((dot) => (
+                  <motion.span
+                    key={dot}
+                    className="h-2 w-2 rounded-full bg-brand-accent"
+                    animate={{ y: [0, -4, 0] }}
+                    transition={{ duration: 0.8, repeat: Infinity, delay: dot * 0.12 }}
                   />
                 ))}
               </div>
             </motion.div>
-          )}
+          ) : null}
         </AnimatePresence>
+
+        {messages.length === 1 && quickQuestions.length > 0 ? (
+          <div className="mb-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/35">Suggested Questions</p>
+            <div className="flex flex-wrap gap-2">
+              {quickQuestions.slice(0, 3).map((question) => (
+                <button
+                  key={question}
+                  onClick={() => sendMessage(question)}
+                  className="glass rounded-full px-3 py-2 text-left text-xs font-semibold text-white/75"
+                >
+                  {question}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
         <div ref={bottomRef} />
       </div>
 
-      {/* Input row */}
-      <div className="px-4 pb-4 pt-2">
-        <div className="glass-strong rounded-2xl flex items-center gap-2 px-4 py-2">
+      <div className="px-5 pb-5 pt-2">
+        <div className="glass-strong flex items-center gap-2 rounded-[26px] px-3 py-3">
           <input
             value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && sendMessage()}
-            placeholder="Type your question..."
-            className="flex-1 bg-transparent text-sm text-white placeholder-white/30 outline-none py-1"
+            onChange={(event) => setInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                sendMessage();
+              }
+            }}
+            placeholder={selectedLabel ? `Ask about ${selectedLabel}...` : 'Type your question...'}
+            className="flex-1 bg-transparent px-2 text-sm text-white placeholder:text-white/30 outline-none"
           />
           <motion.button
-            className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-purple to-brand-indigo flex items-center justify-center"
-            whileTap={{ scale: 0.85 }}
-            onClick={sendMessage}
+            whileTap={{ scale: 0.92 }}
+            onClick={() => sendMessage()}
             disabled={loading}
+            className="grid h-11 w-11 place-items-center rounded-[18px] bg-gradient-primary text-white shadow-glow-sm disabled:opacity-60"
           >
-            <Send size={14} className="text-white" />
+            <Send size={16} />
           </motion.button>
         </div>
       </div>

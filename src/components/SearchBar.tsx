@@ -21,13 +21,13 @@ export default function SearchBar({ placeholder = 'Search topics...', onSearch, 
 
   return (
     <motion.div
-      className={`relative flex items-center glass rounded-2xl px-4 py-3 gap-3 ${
+      className={`relative flex items-center glass rounded-[22px] px-4 py-3.5 gap-3 ${
         focused ? 'glow-border' : ''
       } transition-all duration-300 ${className ?? ''}`}
-      animate={{ scale: focused ? 1.01 : 1 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+      animate={{ scale: focused ? 1.008 : 1, y: focused ? -1 : 0 }}
+      transition={{ type: 'spring', stiffness: 320, damping: 24 }}
     >
-      <Search size={16} className={focused ? 'text-brand-accent' : 'text-white/30'} />
+      <Search size={16} className={focused ? 'text-brand-accent' : 'text-white/35'} />
       <input
         value={value}
         onChange={e => handleChange(e.target.value)}

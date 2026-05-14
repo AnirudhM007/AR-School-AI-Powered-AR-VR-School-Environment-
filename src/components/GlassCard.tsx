@@ -23,7 +23,7 @@ export default function GlassCard({
   ...props
 }: GlassCardProps) {
   const base = clsx(
-    'rounded-3xl overflow-hidden',
+    'rounded-[28px] overflow-hidden relative',
     {
       'glass': variant === 'default',
       'glass-strong': variant === 'strong',
@@ -37,11 +37,12 @@ export default function GlassCard({
   return (
     <motion.div
       className={base}
-      whileHover={hover ? { scale: 1.02, y: -2 } : undefined}
-      whileTap={tap ? { scale: 0.97 } : undefined}
-      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+      whileHover={hover ? { scale: 1.015, y: -3 } : undefined}
+      whileTap={tap ? { scale: 0.985 } : undefined}
+      transition={{ type: 'spring', stiffness: 320, damping: 26, mass: 0.9 }}
       {...props}
     >
+      <div className="pointer-events-none absolute inset-0 rounded-[28px] bg-gradient-to-b from-white/10 via-transparent to-transparent opacity-80" />
       {children}
     </motion.div>
   );

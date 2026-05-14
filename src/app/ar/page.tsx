@@ -2,56 +2,80 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Cpu } from 'lucide-react';
+import { Box, Camera, Sparkles } from 'lucide-react';
 import GlassCard from '@/components/GlassCard';
 import { TOPICS } from '@/lib/topics';
 
 export default function ARIndexPage() {
   return (
-    <main className="page-shell px-5 pt-12 pb-24">
-      <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-        <h1 className="text-2xl font-bold text-white">AR Mode <span>🥽</span></h1>
-        <p className="text-white/40 text-sm mt-1">Select a topic to experience in AR</p>
-      </motion.div>
+    <main className="page-shell px-5 pt-10">
+      <motion.section initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+        <p className="screen-kicker">AR View</p>
+        <h1 className="screen-title">Launch a lesson into your room</h1>
+        <p className="screen-subtitle mt-3 max-w-lg">
+          Choose a model, scan your surroundings, and use the on-screen controls to move, rotate, scale, and inspect it.
+        </p>
+      </motion.section>
 
-      {/* AR availability card */}
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-5">
-        <GlassCard variant="purple" className="p-4 flex items-center gap-4" tap={false} glow>
-          <div className="w-12 h-12 rounded-2xl bg-brand-purple/30 flex items-center justify-center">
-            <Cpu size={22} className="text-brand-accent" />
-          </div>
-          <div>
-            <p className="text-white font-semibold text-sm">WebXR AR Ready</p>
-            <p className="text-white/50 text-xs mt-0.5">Requires Chrome + Android ARCore</p>
+      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="mb-5">
+        <GlassCard variant="purple" className="p-5" glow>
+          <div className="flex items-start gap-4">
+            <div className="glass grid h-14 w-14 place-items-center rounded-[22px]">
+              <Camera size={22} className="text-brand-accent" />
+            </div>
+            <div>
+              <p className="text-base font-semibold text-white">WebXR ready flow</p>
+              <p className="mt-1 text-sm leading-6 text-white/65">
+                AR will attempt to start automatically on supported Android devices. If it is unavailable, the app falls back to the 3D viewer without breaking the lesson flow.
+              </p>
+            </div>
           </div>
         </GlassCard>
       </motion.div>
 
-      {/* Topic list */}
-      <p className="text-white/30 text-xs font-semibold uppercase tracking-widest mb-3 pl-1">Pick a Topic</p>
       <div className="space-y-3">
-        {TOPICS.map((topic, i) => (
+        {TOPICS.map((topic, index) => (
           <motion.div
             key={topic.id}
-            initial={{ opacity: 0, x: -16 }}
+            initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 + i * 0.05 }}
+            transition={{ delay: 0.08 + index * 0.04, type: 'spring', stiffness: 260, damping: 22 }}
           >
             <Link href={`/ar/${topic.id}`}>
-              <GlassCard className="flex items-center gap-4 p-4 cursor-pointer">
-                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${topic.color} flex items-center justify-center text-2xl`}>
-                  {topic.thumbnail}
+              <GlassCard className="p-4">
+                <div className="flex items-center gap-4">
+                  <div className={`grid h-14 w-14 place-items-center rounded-[22px] bg-gradient-to-br ${topic.color} text-3xl shadow-glow-sm`}>
+                    {topic.thumbnail}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-base font-semibold text-white">{topic.title}</h2>
+                    <p className="truncate text-sm text-white/50">{topic.subtitle}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="glass-outline rounded-full px-3 py-1 text-[11px] font-semibold text-white/70">
+                      {topic.category}
+                    </div>
+                    <div className="glass-purple grid h-10 w-10 place-items-center rounded-full">
+                      <Box size={17} className="text-brand-accent" />
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-white font-semibold text-sm">{topic.title}</p>
-                  <p className="text-white/40 text-xs">{topic.category}</p>
-                </div>
-                <span className="text-xs px-2 py-1 glass-purple rounded-full text-brand-accent font-medium">Launch AR →</span>
               </GlassCard>
             </Link>
           </motion.div>
         ))}
       </div>
+
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }} className="mt-6">
+        <GlassCard className="p-4">
+          <div className="flex items-center gap-3">
+            <Sparkles size={16} className="text-brand-cyan" />
+            <p className="text-sm text-white/65">
+              Surface hit-testing is still pending. Right now the model appears in front of the camera and can be adjusted manually once the session starts.
+            </p>
+          </div>
+        </GlassCard>
+      </motion.div>
     </main>
   );
 }

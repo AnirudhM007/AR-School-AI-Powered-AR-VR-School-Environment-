@@ -10,37 +10,41 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          purple: '#7C3AED',
-          violet: '#8B5CF6',
-          indigo: '#4F46E5',
-          accent: '#A78BFA',
-          pink: '#EC4899',
-          bg: '#080815',
-          surface: '#0F0F23',
-          card: '#13132A',
+          bg: '#060816',
+          surface: '#0c1226',
+          card: '#12182f',
+          purple: '#8c6cff',
+          violet: '#7083ff',
+          indigo: '#4b66ff',
+          accent: '#d8dcff',
+          cyan: '#74e6ff',
         },
       },
       backgroundImage: {
-        'gradient-primary': 'linear-gradient(135deg, #7C3AED 0%, #4F46E5 50%, #080815 100%)',
-        'gradient-card': 'linear-gradient(145deg, rgba(124,58,237,0.15) 0%, rgba(79,70,229,0.08) 100%)',
-        'gradient-glow': 'radial-gradient(ellipse at center, rgba(124,58,237,0.3) 0%, transparent 70%)',
+        'gradient-primary':
+          'linear-gradient(135deg, rgba(140,108,255,0.95) 0%, rgba(75,102,255,0.92) 45%, rgba(116,230,255,0.78) 100%)',
+        'gradient-card':
+          'linear-gradient(160deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.04) 45%, rgba(140,108,255,0.08) 100%)',
+        'gradient-mesh':
+          'radial-gradient(circle at 20% 20%, rgba(140,108,255,0.36), transparent 35%), radial-gradient(circle at 80% 10%, rgba(116,230,255,0.22), transparent 28%), radial-gradient(circle at 50% 80%, rgba(75,102,255,0.18), transparent 40%)',
       },
       borderRadius: {
         '4xl': '2rem',
         '5xl': '2.5rem',
       },
       boxShadow: {
-        'glass': '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)',
-        'glow-purple': '0 0 30px rgba(124,58,237,0.4)',
-        'glow-sm': '0 0 15px rgba(124,58,237,0.25)',
+        glass: '0 20px 60px rgba(5, 7, 20, 0.42), inset 0 1px 0 rgba(255,255,255,0.18)',
+        'glow-purple': '0 0 36px rgba(140,108,255,0.34)',
+        'glow-sm': '0 12px 32px rgba(140,108,255,0.22)',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-body)', 'system-ui', 'sans-serif'],
+        heading: ['var(--font-heading)', 'var(--font-body)', 'sans-serif'],
       },
       animation: {
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'float': 'float 6s ease-in-out infinite',
-        'shimmer': 'shimmer 2s linear infinite',
+        'float-slow': 'float 7s ease-in-out infinite',
+        shimmer: 'shimmer 2.2s linear infinite',
+        'pulse-soft': 'pulseSoft 3s ease-in-out infinite',
       },
       keyframes: {
         float: {
@@ -51,9 +55,14 @@ const config: Config = {
           '0%': { backgroundPosition: '-200% 0' },
           '100%': { backgroundPosition: '200% 0' },
         },
+        pulseSoft: {
+          '0%, 100%': { boxShadow: '0 10px 30px rgba(140,108,255,0.14)' },
+          '50%': { boxShadow: '0 16px 42px rgba(140,108,255,0.28)' },
+        },
       },
     },
   },
   plugins: [],
 };
+
 export default config;

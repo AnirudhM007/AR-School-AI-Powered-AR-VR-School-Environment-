@@ -1,58 +1,104 @@
 'use client';
 
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Search } from 'lucide-react';
+import { Compass, Filter } from 'lucide-react';
 import GlassCard from '@/components/GlassCard';
-import { TOPICS } from '@/lib/topics';
+import SearchBar from '@/components/SearchBar';
+import { CATEGORIES, TOPICS } from '@/lib/topics';
 
-const containerVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.07 } },
-};
 const itemVariants = {
-  hidden: { opacity: 0, y: 16, scale: 0.95 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 350, damping: 25 } },
+  hidden: { opacity: 0, y: 18, scale: 0.96 },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: 'spring', stiffness: 280, damping: 22 },
+  },
 };
 
 export default function LibraryPage() {
+  const [query, setQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState<(typeof CATEGORIES)[number]>('All');
+
+  const filteredTopics = useMemo(() => {
+    return TOPICS.filter((topic) => {
+      const matchesCategory = activeCategory === 'All' || topic.category === activeCategory;
+      const matchesQuery =
+        query.trim() === '' ||
+        topic.title.toLowerCase().includes(query.toLowerCase()) ||
+        topic.relatedTopics.some((entry) => entry.toLowerCase().includes(query.toLowerCase()));
+      return matchesCategory && matchesQuery;
+    });
+  }, [activeCategory, query]);
+
   return (
-    <main className="page-shell px-5 pt-12 pb-24">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -16 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between mb-6"
-      >
-        <div>
-          <h1 className="text-2xl font-bold text-white">Library</h1>
-          <p className="text-white/40 text-sm mt-0.5">{TOPICS.length} 3D models available</p>
+    <main className="page-shell px-5 pt-10">
+      <motion.section initial={{ opacity: 0, y: -18 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+        <div className="screen-header mb-3">
+          <div>
+            <p className="screen-kicker">Topic Selection</p>
+            <h1 className="screen-title">Discover 3D lessons</h1>
+          </div>
+          <div className="glass h-11 w-11 rounded-[20px] grid place-items-center">
+            <Compass size={18} className="text-white/80" />
+          </div>
         </div>
-        <motion.button whileTap={{ scale: 0.85 }} className="w-10 h-10 glass rounded-2xl flex items-center justify-center">
-          <Search size={18} className="text-white/60" />
-        </motion.button>
+        <p className="screen-subtitle">
+          Browse every available learning model, then open the viewer or jump directly into AR.
+        </p>
+      </motion.section>
+
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="mb-4">
+        <SearchBar placeholder="Search models, organs, planets..." onSearch={setQuery} />
       </motion.div>
 
-      {/* All Topics */}
       <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
-        className="grid grid-cols-2 gap-4"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.12 }}
+        className="mb-5 flex items-center gap-2 overflow-x-auto pb-1"
       >
-        {TOPICS.map(topic => (
+        <div className="glass flex h-10 min-w-10 items-center justify-center rounded-full">
+          <Filter size={16} className="text-white/65" />
+        </div>
+        {CATEGORIES.filter((category) => category !== 'Vehicles').map((category) => (
+          <button
+            key={category}
+            onClick={() => setActiveCategory(category)}
+            className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
+              activeCategory === category
+                ? 'bg-gradient-primary text-white shadow-glow-sm'
+                : 'glass text-white/55'
+            }`}
+          >
+            {category}
+          </button>
+        ))}
+      </motion.div>
+
+      <motion.div initial="hidden" animate="show" className="grid grid-cols-2 gap-4">
+        {filteredTopics.map((topic) => (
           <motion.div key={topic.id} variants={itemVariants}>
             <Link href={`/viewer/${topic.id}`}>
-              <GlassCard className="overflow-hidden cursor-pointer">
-                <div className={`h-28 bg-gradient-to-br ${topic.color} flex items-center justify-center text-4xl relative`}>
-                  <div className="absolute inset-0 bg-black/20" />
-                  <span className="relative z-10">{topic.thumbnail}</span>
+              <GlassCard className="overflow-hidden">
+                <div className={`relative flex h-36 items-center justify-center bg-gradient-to-br ${topic.color}`}>
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.3),transparent_45%)]" />
+                  <div className="absolute bottom-3 left-3 rounded-full border border-white/20 bg-black/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/75">
+                    {topic.category}
+                  </div>
+                  <div className="relative text-6xl drop-shadow-[0_14px_30px_rgba(0,0,0,0.35)]">{topic.thumbnail}</div>
                 </div>
-                <div className="p-3">
-                  <p className="text-white font-semibold text-sm">{topic.title}</p>
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-white/40 text-xs">{topic.category}</span>
-                    <span className="text-xs px-2 py-0.5 glass-purple rounded-full text-brand-accent">3D</span>
+                <div className="p-4">
+                  <h2 className="text-base font-semibold text-white">{topic.title}</h2>
+                  <p className="mt-1 text-sm text-white/50">{topic.subtitle}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {topic.stats.slice(0, 2).map((stat) => (
+                      <span key={stat} className="glass-outline rounded-full px-2.5 py-1 text-[11px] font-semibold text-white/70">
+                        {stat}
+                      </span>
+                    ))}
                   </div>
                 </div>
               </GlassCard>

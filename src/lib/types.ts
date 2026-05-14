@@ -1,25 +1,49 @@
-// ─── Topic / Class Types ──────────────────────────────────────
+export type TopicCategory =
+  | 'All'
+  | 'Science'
+  | 'Space'
+  | 'Vehicles'
+  | 'Plants'
+  | 'Earth';
+
+export type Vec3 = [number, number, number];
+
+export interface TopicAnnotation {
+  id: string;
+  label: string;
+  description: string;
+  position: Vec3;
+  questionPrompt: string;
+  meshKeywords?: string[];
+}
+
 export interface ClassItem {
   id: string;
   label: string;
   emoji: string;
-  color: string; // tailwind gradient class
+  color: string;
+  description: string;
 }
 
 export interface TopicCard {
   id: string;
   title: string;
-  category: string;
-  thumbnail: string; // emoji or url
+  subtitle: string;
+  category: Exclude<TopicCategory, 'All'>;
+  thumbnail: string;
   color: string;
   description: string;
-  modelUrl: string; // CDN url to .glb
+  heroLabel: string;
+  stats: string[];
+  relatedTopics: string[];
+  quickQuestions: string[];
+  modelUrl: string;
   classIds: string[];
+  modelScale?: number;
+  modelPosition?: Vec3;
+  annotations: TopicAnnotation[];
 }
 
-export type TopicCategory = 'All' | 'Science' | 'Space' | 'Vehicles' | 'Plants' | 'History';
-
-// ─── Chat Types ───────────────────────────────────────────────
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -28,7 +52,6 @@ export interface ChatMessage {
   relatedTopics?: string[];
 }
 
-// ─── AR Session Types ─────────────────────────────────────────
 export type ARSessionState = 'idle' | 'starting' | 'active' | 'error' | 'unsupported';
 
 export interface ARSessionControls {
