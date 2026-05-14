@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Manrope, Sora } from 'next/font/google';
 import './globals.css';
 import BottomNav from '@/components/BottomNav';
+import DevPreviewReset from '@/components/DevPreviewReset';
 
 const bodyFont = Manrope({
   subsets: ['latin'],
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className={`${bodyFont.variable} ${headingFont.variable} min-h-dvh bg-brand-bg text-white antialiased`}
         suppressHydrationWarning
       >
+        <DevPreviewReset />
         {children}
         <BottomNav />
       </body>
