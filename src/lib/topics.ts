@@ -192,7 +192,7 @@ export const TOPICS: TopicCard[] = [
       'Why are ventricles thicker than atria?',
       'How does oxygen-rich blood move through the body?',
     ],
-    modelUrl: 'procedural:heart',
+    modelUrl: '/models/human-heart.glb',
     classIds: ['6', '7', '8', '9', '10'],
     modelScale: 1.3,
     annotations: heartAnnotations,
