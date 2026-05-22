@@ -3,6 +3,7 @@
 import { motion, HTMLMotionProps } from 'framer-motion';
 import { ReactNode } from 'react';
 import clsx from 'clsx';
+import { iosSpring, iosSnappySpring } from '@/lib/motion';
 
 interface FloatingButtonProps extends Omit<HTMLMotionProps<'button'>, 'children'> {
   children?: ReactNode;
@@ -45,9 +46,9 @@ export default function FloatingButton({
   return (
     <motion.button
       className={base}
-      whileHover={{ scale: 1.05, y: -1 }}
-      whileTap={{ scale: 0.9 }}
-      transition={{ type: 'spring', stiffness: 420, damping: 24 }}
+      whileHover={{ scale: 1.03, y: -1.5 }}
+      whileTap={{ scale: 0.94 }}
+      transition={variant === 'primary' ? iosSnappySpring : iosSpring}
       {...props}
     >
       {icon && <span className="text-lg leading-none">{icon}</span>}

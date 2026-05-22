@@ -2,29 +2,38 @@
 
 import { Suspense } from 'react';
 import { motion } from 'framer-motion';
-import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Bot } from 'lucide-react';
 import ChatUI from '@/components/ChatUI';
+import { iosFadeDown, iosFadeUp } from '@/lib/motion';
 import { getTopicById } from '@/lib/topics';
 
 function AIContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const topicId = searchParams.get('topic') ?? '';
   const annotationId = searchParams.get('part');
   const prompt = searchParams.get('prompt');
+  const from = searchParams.get('from');
   const topic = getTopicById(topicId);
   const annotation = annotationId ? topic?.annotations.find((item) => item.id === annotationId) : undefined;
+  const viewerPath = topic
+    ? from
+      ? `/viewer/${topic.id}?from=${encodeURIComponent(from)}`
+      : `/viewer/${topic.id}`
+    : '/';
 
   return (
     <main className="page-shell flex h-dvh flex-col px-4 pb-4 pt-8">
-      <motion.section initial={{ opacity: 0, y: -18 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
+      <motion.section initial={iosFadeDown.initial} animate={iosFadeDown.animate} transition={iosFadeDown.transition} className="mb-4">
         <div className="screen-header">
-          <Link href={topic ? `/viewer/${topic.id}` : '/'}>
-            <div className="glass grid h-11 w-11 place-items-center rounded-[20px]">
-              <ArrowLeft size={18} className="text-white/80" />
-            </div>
-          </Link>
+          <button
+            type="button"
+            onClick={() => router.replace(viewerPath)}
+            className="glass grid h-11 w-11 place-items-center rounded-[20px]"
+          >
+            <ArrowLeft size={18} className="text-white/80" />
+          </button>
           <div className="flex items-center gap-3">
             <div className="glass-purple grid h-11 w-11 place-items-center rounded-[20px]">
               <Bot size={18} className="text-white" />
@@ -38,7 +47,7 @@ function AIContent() {
         </div>
       </motion.section>
 
-      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="mb-4">
+      <motion.div initial={iosFadeUp.initial} animate={iosFadeUp.animate} transition={{ ...iosFadeUp.transition, delay: 0.1 }} className="mb-4">
         <div className="glass rounded-[28px] px-4 py-3 text-sm text-white/65">
           {annotation
             ? `Focused on ${annotation.label}. Ask a detailed question or use the suggested prompts below.`

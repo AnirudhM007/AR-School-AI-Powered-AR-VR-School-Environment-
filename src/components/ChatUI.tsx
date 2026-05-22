@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bot, Send, Sparkles, User } from 'lucide-react';
+import { iosGentleSpring, iosSnappySpring } from '@/lib/motion';
 
 export interface ChatMessage {
   id: string;
@@ -156,7 +157,7 @@ export default function ChatUI({
               initial={{ opacity: 0, y: 18, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
-              transition={{ type: 'spring', stiffness: 320, damping: 24 }}
+              transition={iosGentleSpring}
               className={`mb-4 flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
             >
               <div
@@ -211,7 +212,7 @@ export default function ChatUI({
                     key={dot}
                     className="h-2 w-2 rounded-full bg-brand-accent"
                     animate={{ y: [0, -4, 0] }}
-                    transition={{ duration: 0.8, repeat: Infinity, delay: dot * 0.12 }}
+                    transition={{ duration: 1.15, repeat: Infinity, delay: dot * 0.16 }}
                   />
                 ))}
               </div>
@@ -253,7 +254,8 @@ export default function ChatUI({
             className="flex-1 bg-transparent px-2 text-sm text-white placeholder:text-white/30 outline-none"
           />
           <motion.button
-            whileTap={{ scale: 0.92 }}
+            whileTap={{ scale: 0.95 }}
+            transition={iosSnappySpring}
             onClick={() => sendMessage()}
             disabled={loading}
             className="grid h-11 w-11 place-items-center rounded-[18px] bg-gradient-primary text-white shadow-glow-sm disabled:opacity-60"

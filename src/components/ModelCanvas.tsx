@@ -6,6 +6,7 @@ import { Center, ContactShadows, Environment, Float, Html, OrbitControls, useGLT
 import { motion } from 'framer-motion';
 import { DoubleSide, Group, Matrix4, Object3D, Vector3 } from 'three';
 import { useModelRotation } from '@/hooks/useModelRotation';
+import { iosSpring } from '@/lib/motion';
 import { TopicAnnotation, Vec3 } from '@/lib/types';
 
 type XRTransientSource = XRTransientInputHitTestSource;
@@ -15,6 +16,14 @@ function matchAnnotation(meshName: string, annotations: TopicAnnotation[]) {
   return annotations.find((annotation) =>
     annotation.meshKeywords?.some((keyword) => normalizedName.includes(keyword.toLowerCase())),
   );
+}
+
+function isProceduralModel(url: string) {
+  return url.startsWith('procedural:');
+}
+
+function getProceduralModelId(url: string) {
+  return url.replace('procedural:', '');
 }
 
 function HotspotBadge({
@@ -99,6 +108,263 @@ function GLTFModel({
     <group onPointerDown={handlePointerDown}>
       <Center>
         <primitive object={object} scale={1.25 * modelScale} />
+        {showHotspots && !xrSession
+          ? annotations.map((annotation) => (
+              <HotspotBadge
+                key={annotation.id}
+                annotation={annotation}
+                selected={selectedAnnotationId === annotation.id}
+                onSelect={(item) => onSelectAnnotation?.(item)}
+              />
+            ))
+          : null}
+      </Center>
+    </group>
+  );
+}
+
+function ProceduralContent({ kind }: { kind: string }) {
+  switch (kind) {
+    case 'heart':
+      return (
+        <group rotation={[0.08, -0.3, 0]}>
+          <mesh name="ventricle-left" position={[-0.22, -0.12, 0]} castShadow receiveShadow>
+            <sphereGeometry args={[0.34, 36, 36]} />
+            <meshStandardMaterial color="#a3152a" roughness={0.5} metalness={0.06} />
+          </mesh>
+          <mesh name="ventricle-right" position={[0.16, -0.22, 0.04]} scale={[0.88, 0.96, 0.88]} castShadow receiveShadow>
+            <sphereGeometry args={[0.38, 36, 36]} />
+            <meshStandardMaterial color="#c61f36" roughness={0.46} metalness={0.06} />
+          </mesh>
+          <mesh name="atria-left" position={[-0.22, 0.38, -0.02]} scale={[0.72, 0.62, 0.72]} castShadow receiveShadow>
+            <sphereGeometry args={[0.24, 32, 32]} />
+            <meshStandardMaterial color="#7b1534" roughness={0.48} metalness={0.04} />
+          </mesh>
+          <mesh name="atria-right" position={[0.12, 0.34, 0.03]} scale={[0.76, 0.64, 0.72]} castShadow receiveShadow>
+            <sphereGeometry args={[0.24, 32, 32]} />
+            <meshStandardMaterial color="#8d2440" roughness={0.48} metalness={0.04} />
+          </mesh>
+          <mesh name="aorta" position={[0.14, 0.84, 0.02]} rotation={[0, 0, -0.3]} castShadow receiveShadow>
+            <cylinderGeometry args={[0.09, 0.12, 0.54, 24]} />
+            <meshStandardMaterial color="#5082ff" roughness={0.42} metalness={0.08} />
+          </mesh>
+          <mesh name="artery-left" position={[-0.28, 0.72, 0.18]} rotation={[0.2, 0.1, 0.6]} castShadow receiveShadow>
+            <cylinderGeometry args={[0.05, 0.06, 0.38, 20]} />
+            <meshStandardMaterial color="#4a72ea" roughness={0.42} metalness={0.08} />
+          </mesh>
+          <mesh name="artery-right" position={[0.44, 0.56, -0.06]} rotation={[0.1, 0.2, -0.8]} castShadow receiveShadow>
+            <cylinderGeometry args={[0.05, 0.06, 0.36, 20]} />
+            <meshStandardMaterial color="#d1485e" roughness={0.42} metalness={0.08} />
+          </mesh>
+        </group>
+      );
+    case 'solar-system':
+      return (
+        <group rotation={[0.45, -0.4, 0.1]}>
+          <mesh name="sun" castShadow receiveShadow>
+            <sphereGeometry args={[0.4, 40, 40]} />
+            <meshStandardMaterial color="#f7b733" emissive="#ff9d00" emissiveIntensity={1.4} roughness={0.32} />
+          </mesh>
+          {[
+            { name: 'mercury', orbit: 0.78, size: 0.07, color: '#a79b88', angle: 0.4 },
+            { name: 'venus', orbit: 1.05, size: 0.11, color: '#dcb26a', angle: 1.8 },
+            { name: 'earth', orbit: 1.34, size: 0.12, color: '#53a3ff', angle: 2.7 },
+            { name: 'mars', orbit: 1.63, size: 0.1, color: '#ca5945', angle: 4.1 },
+            { name: 'jupiter', orbit: 2.02, size: 0.2, color: '#d6a46f', angle: 0.9 },
+            { name: 'saturn', orbit: 2.42, size: 0.18, color: '#e9cf90', angle: 3.6, ring: true },
+          ].map((planet) => (
+            <group key={planet.name}>
+              <mesh rotation={[Math.PI / 2, 0, 0]}>
+                <torusGeometry args={[planet.orbit, 0.006, 12, 96]} />
+                <meshStandardMaterial color="#ffffff" transparent opacity={0.18} roughness={1} />
+              </mesh>
+              <mesh
+                name={planet.name}
+                position={[
+                  Math.cos(planet.angle) * planet.orbit,
+                  0,
+                  Math.sin(planet.angle) * planet.orbit,
+                ]}
+                castShadow
+                receiveShadow
+              >
+                <sphereGeometry args={[planet.size, 24, 24]} />
+                <meshStandardMaterial color={planet.color} roughness={0.48} metalness={0.08} />
+              </mesh>
+              {planet.ring ? (
+                <mesh
+                  position={[
+                    Math.cos(planet.angle) * planet.orbit,
+                    0,
+                    Math.sin(planet.angle) * planet.orbit,
+                  ]}
+                  rotation={[Math.PI / 2.6, 0.3, 0]}
+                >
+                  <torusGeometry args={[0.3, 0.024, 10, 50]} />
+                  <meshStandardMaterial color="#f7e1b6" transparent opacity={0.75} />
+                </mesh>
+              ) : null}
+            </group>
+          ))}
+        </group>
+      );
+    case 'electric-circuit':
+      return (
+        <group rotation={[0.28, -0.4, 0]}>
+          <mesh position={[0, -0.2, 0]} castShadow receiveShadow>
+            <boxGeometry args={[2.7, 0.16, 1.7]} />
+            <meshStandardMaterial color="#123644" roughness={0.72} />
+          </mesh>
+          <mesh name="battery" position={[-0.76, 0.12, 0.05]} rotation={[0, 0, Math.PI / 2]} castShadow receiveShadow>
+            <cylinderGeometry args={[0.18, 0.18, 0.78, 24]} />
+            <meshStandardMaterial color="#27374d" roughness={0.45} />
+          </mesh>
+          <mesh position={[-1.12, 0.12, 0.05]} rotation={[0, 0, Math.PI / 2]} castShadow receiveShadow>
+            <cylinderGeometry args={[0.05, 0.05, 0.08, 20]} />
+            <meshStandardMaterial color="#ef4444" metalness={0.35} roughness={0.3} />
+          </mesh>
+          <mesh position={[-0.4, 0.12, 0.05]} rotation={[0, 0, Math.PI / 2]} castShadow receiveShadow>
+            <cylinderGeometry args={[0.05, 0.05, 0.08, 20]} />
+            <meshStandardMaterial color="#e5e7eb" metalness={0.45} roughness={0.28} />
+          </mesh>
+          <mesh name="wire-path" position={[0.05, 0.06, 0.66]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
+            <torusGeometry args={[0.92, 0.05, 18, 80]} />
+            <meshStandardMaterial color="#52d2c6" metalness={0.22} roughness={0.36} />
+          </mesh>
+          <mesh name="load-bulb" position={[0.96, 0.35, 0.06]} castShadow receiveShadow>
+            <sphereGeometry args={[0.22, 28, 28]} />
+            <meshStandardMaterial color="#ffe185" emissive="#ffc947" emissiveIntensity={1.1} roughness={0.22} />
+          </mesh>
+          <mesh position={[0.96, 0.1, 0.06]} castShadow receiveShadow>
+            <cylinderGeometry args={[0.11, 0.14, 0.3, 22]} />
+            <meshStandardMaterial color="#9ca3af" metalness={0.4} roughness={0.36} />
+          </mesh>
+        </group>
+      );
+    case 'plant-cell':
+      return (
+        <group rotation={[0.1, -0.35, 0]}>
+          <mesh position={[0, 0, 0]} scale={[1.45, 0.96, 1.2]} castShadow receiveShadow>
+            <sphereGeometry args={[0.78, 40, 40]} />
+            <meshStandardMaterial color="#6ad38d" transparent opacity={0.9} roughness={0.52} />
+          </mesh>
+          <mesh name="vacuole" position={[0.22, -0.02, 0.12]} scale={[1.1, 0.76, 0.9]} castShadow receiveShadow>
+            <sphereGeometry args={[0.38, 32, 32]} />
+            <meshStandardMaterial color="#a7f3d0" transparent opacity={0.55} roughness={0.2} />
+          </mesh>
+          <mesh name="nucleus" position={[-0.16, -0.08, 0.3]} castShadow receiveShadow>
+            <sphereGeometry args={[0.18, 28, 28]} />
+            <meshStandardMaterial color="#7c3aed" roughness={0.36} />
+          </mesh>
+          {[
+            [-0.46, 0.28, 0.06],
+            [0.42, 0.18, -0.08],
+            [0.18, -0.32, 0.04],
+          ].map((position, index) => (
+            <mesh key={index} name="chloroplast" position={position as Vec3} rotation={[0.4, 0.2, 0.2]} castShadow receiveShadow>
+              <capsuleGeometry args={[0.09, 0.16, 6, 12]} />
+              <meshStandardMaterial color="#198754" roughness={0.5} />
+            </mesh>
+          ))}
+        </group>
+      );
+    case 'volcano':
+      return (
+        <group rotation={[0.08, -0.4, 0]}>
+          <mesh position={[0, -0.3, 0]} castShadow receiveShadow>
+            <coneGeometry args={[0.95, 1.6, 36]} />
+            <meshStandardMaterial color="#52332b" roughness={0.82} />
+          </mesh>
+          <mesh name="magma" position={[0, 0.34, 0]} castShadow receiveShadow>
+            <cylinderGeometry args={[0.18, 0.26, 0.16, 24]} />
+            <meshStandardMaterial color="#ff7a18" emissive="#ff4d00" emissiveIntensity={1.2} roughness={0.25} />
+          </mesh>
+          <mesh name="vent" position={[0.02, -0.02, 0.22]} rotation={[Math.PI / 2.4, 0, 0]} castShadow receiveShadow>
+            <cylinderGeometry args={[0.08, 0.1, 0.88, 18]} />
+            <meshStandardMaterial color="#704634" roughness={0.74} />
+          </mesh>
+          {[
+            [0.02, 0.8, 0],
+            [-0.18, 1.02, 0.08],
+            [0.21, 1.1, -0.04],
+          ].map((position, index) => (
+            <mesh key={index} name="ash-cloud" position={position as Vec3}>
+              <sphereGeometry args={[0.18 + index * 0.04, 24, 24]} />
+              <meshStandardMaterial color="#5f5d66" transparent opacity={0.62} roughness={1} />
+            </mesh>
+          ))}
+        </group>
+      );
+    case 'brain':
+      return (
+        <group rotation={[0.12, -0.36, 0]}>
+          {[
+            [-0.3, 0.06, 0.08],
+            [0.02, 0.12, 0.02],
+            [0.34, 0.04, 0],
+            [-0.1, 0.3, -0.04],
+            [0.18, 0.28, 0.06],
+          ].map((position, index) => (
+            <mesh
+              key={index}
+              name={index < 4 ? 'cerebrum' : 'cerebellum'}
+              position={position as Vec3}
+              scale={index === 4 ? [0.8, 0.74, 0.8] : [1, 1, 1]}
+              castShadow
+              receiveShadow
+            >
+              <sphereGeometry args={[0.34 - index * 0.02, 28, 28]} />
+              <meshStandardMaterial color="#f0a3b7" roughness={0.54} />
+            </mesh>
+          ))}
+          <mesh name="brainstem" position={[0.08, -0.46, 0.06]} rotation={[0.18, 0, 0]} castShadow receiveShadow>
+            <cylinderGeometry args={[0.1, 0.14, 0.5, 22]} />
+            <meshStandardMaterial color="#d68ea1" roughness={0.58} />
+          </mesh>
+        </group>
+      );
+    default:
+      return (
+        <mesh castShadow receiveShadow>
+          <sphereGeometry args={[0.62, 32, 32]} />
+          <meshStandardMaterial color="#7c3aed" roughness={0.45} />
+        </mesh>
+      );
+  }
+}
+
+function ProceduralModel({
+  id,
+  annotations,
+  showHotspots,
+  selectedAnnotationId,
+  onSelectAnnotation,
+  modelScale = 1,
+  xrSession,
+}: {
+  id: string;
+  annotations: TopicAnnotation[];
+  showHotspots: boolean;
+  selectedAnnotationId?: string | null;
+  onSelectAnnotation?: (annotation: TopicAnnotation) => void;
+  modelScale?: number;
+  xrSession?: XRSession | null;
+}) {
+  const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
+    if (!showHotspots || !onSelectAnnotation) return;
+    const matched = matchAnnotation(event.object?.name ?? '', annotations);
+    if (matched) {
+      event.stopPropagation();
+      onSelectAnnotation(matched);
+    }
+  };
+
+  return (
+    <group onPointerDown={handlePointerDown}>
+      <Center>
+        <group scale={1.08 * modelScale}>
+          <ProceduralContent kind={id} />
+        </group>
         {showHotspots && !xrSession
           ? annotations.map((annotation) => (
               <HotspotBadge
@@ -408,6 +674,7 @@ export default function ModelCanvas({
   }, [autoRotate]);
 
   const modelVisible = !xrSession || Boolean(placedPosition);
+  const proceduralModelId = isProceduralModel(modelUrl) ? getProceduralModelId(modelUrl) : null;
   const basePosition: Vec3 = xrSession
     ? placedPosition ?? [0, -999, 0]
     : [0, -0.12, 0];
@@ -456,15 +723,27 @@ export default function ModelCanvas({
             <AutoRotate active={rotating && !xrSession}>
               <group position={finalPosition} rotation={transformRotation} scale={[transformScale, transformScale, transformScale]}>
                 <Float speed={xrSession ? 0 : 1.15} rotationIntensity={xrSession ? 0 : 0.04} floatIntensity={xrSession ? 0 : 0.12}>
-                  <GLTFModel
-                    url={modelUrl}
-                    annotations={annotations}
-                    showHotspots={showHotspots}
-                    selectedAnnotationId={selectedAnnotationId}
-                    onSelectAnnotation={onSelectAnnotation}
-                    modelScale={modelScale}
-                    xrSession={xrSession}
-                  />
+                  {proceduralModelId ? (
+                    <ProceduralModel
+                      id={proceduralModelId}
+                      annotations={annotations}
+                      showHotspots={showHotspots}
+                      selectedAnnotationId={selectedAnnotationId}
+                      onSelectAnnotation={onSelectAnnotation}
+                      modelScale={modelScale}
+                      xrSession={xrSession}
+                    />
+                  ) : (
+                    <GLTFModel
+                      url={modelUrl}
+                      annotations={annotations}
+                      showHotspots={showHotspots}
+                      selectedAnnotationId={selectedAnnotationId}
+                      onSelectAnnotation={onSelectAnnotation}
+                      modelScale={modelScale}
+                      xrSession={xrSession}
+                    />
+                  )}
                 </Float>
               </group>
             </AutoRotate>
@@ -486,7 +765,8 @@ export default function ModelCanvas({
           className={`absolute bottom-4 right-4 rounded-full px-3.5 py-2 text-xs font-semibold transition ${
             rotating ? 'glass-purple text-brand-accent' : 'glass text-white/55'
           }`}
-          whileTap={{ scale: 0.94 }}
+          whileTap={{ scale: 0.96 }}
+          transition={iosSpring}
         >
           {rotating ? 'Auto Rotate On' : 'Auto Rotate Off'}
         </motion.button>

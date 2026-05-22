@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { Search, X } from 'lucide-react';
 import { useState } from 'react';
+import { iosGentleSpring, iosSpring } from '@/lib/motion';
 
 interface SearchBarProps {
   placeholder?: string;
@@ -23,9 +24,9 @@ export default function SearchBar({ placeholder = 'Search topics...', onSearch, 
     <motion.div
       className={`relative flex items-center glass rounded-[22px] px-4 py-3.5 gap-3 ${
         focused ? 'glow-border' : ''
-      } transition-all duration-300 ${className ?? ''}`}
-      animate={{ scale: focused ? 1.008 : 1, y: focused ? -1 : 0 }}
-      transition={{ type: 'spring', stiffness: 320, damping: 24 }}
+      } transition-all duration-500 ${className ?? ''}`}
+      animate={{ scale: focused ? 1.006 : 1, y: focused ? -0.5 : 0 }}
+      transition={iosGentleSpring}
     >
       <Search size={16} className={focused ? 'text-brand-accent' : 'text-white/35'} />
       <input
@@ -40,6 +41,7 @@ export default function SearchBar({ placeholder = 'Search topics...', onSearch, 
         <motion.button
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
+          transition={iosSpring}
           onClick={() => handleChange('')}
           className="text-white/40 hover:text-white/80"
         >

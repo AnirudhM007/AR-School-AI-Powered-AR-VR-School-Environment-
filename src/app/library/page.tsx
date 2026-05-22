@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Compass, Filter } from 'lucide-react';
 import GlassCard from '@/components/GlassCard';
 import SearchBar from '@/components/SearchBar';
+import { iosFadeDown, iosFadeUp, iosGentleSpring } from '@/lib/motion';
 import { CATEGORIES, TOPICS } from '@/lib/topics';
 
 const itemVariants = {
@@ -14,7 +15,7 @@ const itemVariants = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { type: 'spring', stiffness: 280, damping: 22 },
+    transition: iosGentleSpring,
   },
 };
 
@@ -35,7 +36,7 @@ export default function LibraryPage() {
 
   return (
     <main className="page-shell px-5 pt-10">
-      <motion.section initial={{ opacity: 0, y: -18 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+      <motion.section initial={iosFadeDown.initial} animate={iosFadeDown.animate} transition={iosFadeDown.transition} className="mb-6">
         <div className="screen-header mb-3">
           <div>
             <p className="screen-kicker">Topic Selection</p>
@@ -50,14 +51,14 @@ export default function LibraryPage() {
         </p>
       </motion.section>
 
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="mb-4">
+      <motion.div initial={iosFadeUp.initial} animate={iosFadeUp.animate} transition={{ ...iosFadeUp.transition, delay: 0.1 }} className="mb-4">
         <SearchBar placeholder="Search models, organs, planets..." onSearch={setQuery} />
       </motion.div>
 
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.12 }}
+        initial={iosFadeUp.initial}
+        animate={iosFadeUp.animate}
+        transition={{ ...iosFadeUp.transition, delay: 0.14 }}
         className="mb-5 flex items-center gap-2 overflow-x-auto pb-1"
       >
         <div className="glass flex h-10 min-w-10 items-center justify-center rounded-full">
@@ -81,7 +82,12 @@ export default function LibraryPage() {
       <motion.div initial="hidden" animate="show" className="grid grid-cols-2 gap-4">
         {filteredTopics.map((topic) => (
           <motion.div key={topic.id} variants={itemVariants}>
-            <Link href={`/viewer/${topic.id}`}>
+            <Link
+              href={{
+                pathname: `/viewer/${topic.id}`,
+                query: { from: '/library' },
+              }}
+            >
               <GlassCard className="overflow-hidden">
                 <div className={`relative flex h-36 items-center justify-center bg-gradient-to-br ${topic.color}`}>
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.3),transparent_45%)]" />

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Home, BookOpen, Cpu, User, Trophy } from 'lucide-react';
+import { iosGentleSpring, iosSpring } from '@/lib/motion';
 
 const NAV_ITEMS = [
   { label: 'Home',    href: '/',        icon: Home },
@@ -33,8 +34,8 @@ export default function BottomNav() {
               <Link key={href} href={href} className="flex-1">
                 <motion.div
                   className="flex flex-col items-center gap-1 py-1 cursor-pointer"
-                  whileTap={{ scale: 0.92 }}
-                  transition={{ type: 'spring', stiffness: 420, damping: 24 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={iosSpring}
                 >
                   <div className="relative">
                     {isActive && (
@@ -42,7 +43,7 @@ export default function BottomNav() {
                         layoutId="nav-indicator"
                         className="absolute inset-0 rounded-2xl bg-gradient-to-br from-brand-purple/35 to-brand-cyan/15"
                         style={{ inset: '-7px -10px' }}
-                        transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+                        transition={iosGentleSpring}
                       />
                     )}
                     <Icon

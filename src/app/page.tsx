@@ -7,11 +7,12 @@ import { Menu, Sparkles } from 'lucide-react';
 import SearchBar from '@/components/SearchBar';
 import GlassCard from '@/components/GlassCard';
 import InstallAppButton from '@/components/InstallAppButton';
+import { iosFadeDown, iosFadeUp, iosGentleSpring } from '@/lib/motion';
 import { CLASSES, TOPICS } from '@/lib/topics';
 
 const containerVariants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.06 } },
+  show: { transition: { staggerChildren: 0.1, delayChildren: 0.06 } },
 };
 
 const itemVariants = {
@@ -20,7 +21,7 @@ const itemVariants = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { type: 'spring', stiffness: 280, damping: 24 },
+    transition: iosGentleSpring,
   },
 };
 
@@ -35,8 +36,9 @@ export default function HomePage() {
   return (
     <main className="page-shell px-5 pt-10">
       <motion.section
-        initial={{ opacity: 0, y: -18 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={iosFadeDown.initial}
+        animate={iosFadeDown.animate}
+        transition={iosFadeDown.transition}
         className="screen-header mb-6"
       >
         <div className="flex items-center gap-3">
@@ -60,9 +62,9 @@ export default function HomePage() {
       </motion.section>
 
       <motion.p
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.08 }}
+        initial={iosFadeUp.initial}
+        animate={iosFadeUp.animate}
+        transition={{ ...iosFadeUp.transition, delay: 0.1 }}
         className="screen-subtitle mb-5 max-w-sm"
       >
         Pick a class, open a 3D lesson, and jump into a smooth AR learning flow with instant
@@ -70,9 +72,9 @@ export default function HomePage() {
       </motion.p>
 
       <motion.div
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.12 }}
+        initial={iosFadeUp.initial}
+        animate={iosFadeUp.animate}
+        transition={{ ...iosFadeUp.transition, delay: 0.14 }}
         className="mb-6"
       >
         <SearchBar
@@ -83,12 +85,17 @@ export default function HomePage() {
       </motion.div>
 
       <motion.div
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.16 }}
+        initial={iosFadeUp.initial}
+        animate={iosFadeUp.animate}
+        transition={{ ...iosFadeUp.transition, delay: 0.18 }}
         className="mb-6"
       >
-        <Link href={`/viewer/${featuredTopic.id}`}>
+        <Link
+          href={{
+            pathname: `/viewer/${featuredTopic.id}`,
+            query: { from: '/' },
+          }}
+        >
           <GlassCard variant="purple" className="overflow-hidden p-5" glow>
             <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-white/10 to-transparent" />
             <div className="relative flex items-start justify-between gap-4">
@@ -116,9 +123,9 @@ export default function HomePage() {
       </motion.div>
 
       <motion.section
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.22 }}
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ ...iosFadeUp.transition, delay: 0.24 }}
         className="mb-7"
       >
         <div className="mb-3 flex items-center justify-between">
@@ -156,9 +163,9 @@ export default function HomePage() {
       </motion.section>
 
       <motion.section
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.28 }}
+        initial={iosFadeUp.initial}
+        animate={iosFadeUp.animate}
+        transition={{ ...iosFadeUp.transition, delay: 0.3 }}
       >
         <div className="mb-3 flex items-center gap-2">
           <Sparkles size={16} className="text-brand-cyan" />
@@ -166,7 +173,13 @@ export default function HomePage() {
         </div>
         <div className="space-y-3">
           {spotlightTopics.map((topic) => (
-            <Link href={`/viewer/${topic.id}`} key={topic.id}>
+            <Link
+              href={{
+                pathname: `/viewer/${topic.id}`,
+                query: { from: '/' },
+              }}
+              key={topic.id}
+            >
               <GlassCard className="p-4">
                 <div className="flex items-center gap-4">
                   <div

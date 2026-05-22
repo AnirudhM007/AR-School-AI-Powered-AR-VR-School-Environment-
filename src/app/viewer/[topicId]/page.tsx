@@ -3,11 +3,12 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Heart, Info, Maximize2, RotateCw, Sparkles, ZoomIn } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import GlassCard from '@/components/GlassCard';
 import FloatingButton from '@/components/FloatingButton';
+import { iosFadeDown, iosFadeUp } from '@/lib/motion';
 import { buildTopicContext, getTopicById } from '@/lib/topics';
 import { TopicAnnotation } from '@/lib/types';
 
@@ -18,8 +19,10 @@ type ActiveMode = 'info' | 'rotate' | 'zoom' | null;
 export default function ViewerPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const topicId = params?.topicId as string;
   const topic = getTopicById(topicId);
+  const from = searchParams.get('from') ?? '/';
 
   const [liked, setLiked] = useState(false);
   const [activeMode, setActiveMode] = useState<ActiveMode>('info');
@@ -71,9 +74,9 @@ export default function ViewerPage() {
 
   return (
     <main className="page-shell px-4 pb-6 pt-8">
-      <motion.section initial={{ opacity: 0, y: -18 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
+      <motion.section initial={iosFadeDown.initial} animate={iosFadeDown.animate} transition={iosFadeDown.transition} className="mb-4">
         <div className="screen-header">
-          <button onClick={() => router.back()} className="glass grid h-11 w-11 place-items-center rounded-[20px]">
+          <button onClick={() => router.push(from)} className="glass grid h-11 w-11 place-items-center rounded-[20px]">
             <ArrowLeft size={18} className="text-white/80" />
           </button>
           <div className="text-center">
@@ -89,7 +92,7 @@ export default function ViewerPage() {
         </div>
       </motion.section>
 
-      <motion.section initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
+      <motion.section initial={iosFadeUp.initial} animate={iosFadeUp.animate} transition={{ ...iosFadeUp.transition, delay: 0.08 }} className="mb-4">
         <GlassCard className="overflow-hidden p-3">
           <div
             className={`relative overflow-hidden rounded-[28px] bg-gradient-to-br ${topic.color} ${
@@ -144,7 +147,12 @@ export default function ViewerPage() {
               icon={<ZoomIn size={18} />}
               label="Zoom"
             />
-            <Link href={`/ar/${topic.id}`}>
+            <Link
+              href={{
+                pathname: `/ar/${topic.id}`,
+                query: { from },
+              }}
+            >
               <FloatingButton
                 size="md"
                 variant="primary"
@@ -156,7 +164,7 @@ export default function ViewerPage() {
         </GlassCard>
       </motion.section>
 
-      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="mb-4">
+      <motion.section initial={iosFadeUp.initial} animate={iosFadeUp.animate} transition={{ ...iosFadeUp.transition, delay: 0.14 }} className="mb-4">
         <GlassCard variant="strong" className="p-5">
           <div className="mb-3 flex items-start justify-between gap-4">
             <div>
@@ -201,7 +209,7 @@ export default function ViewerPage() {
         </GlassCard>
       </motion.section>
 
-      <motion.section initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="grid gap-4 sm:grid-cols-[1.2fr_0.8fr]">
+      <motion.section initial={iosFadeUp.initial} animate={iosFadeUp.animate} transition={{ ...iosFadeUp.transition, delay: 0.2 }} className="grid gap-4 sm:grid-cols-[1.2fr_0.8fr]">
         <GlassCard className="p-5">
           <div className="mb-3 flex items-center gap-2">
             <Sparkles size={16} className="text-brand-cyan" />
@@ -215,6 +223,7 @@ export default function ViewerPage() {
               pathname: '/ai',
               query: {
                 topic: topic.id,
+                from,
                 part: aiContext?.selectedLabel ? selectedAnnotation?.id : undefined,
                 prompt: aiContext?.prompt,
               },

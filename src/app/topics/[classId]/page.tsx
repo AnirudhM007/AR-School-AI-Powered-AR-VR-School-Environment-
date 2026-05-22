@@ -87,7 +87,12 @@ export default function TopicsPage() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ delay: 0.08 + index * 0.04, type: 'spring', stiffness: 280, damping: 22 }}
           >
-            <Link href={`/viewer/${topic.id}`}>
+            <Link
+              href={{
+                pathname: `/viewer/${topic.id}`,
+                query: { from: `/topics/${classId}` },
+              }}
+            >
               <GlassCard className="overflow-hidden">
                 <div className={`relative flex h-36 items-center justify-center bg-gradient-to-br ${topic.color}`}>
                   <div className="absolute inset-0 bg-black/10" />

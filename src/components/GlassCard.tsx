@@ -3,6 +3,7 @@
 import { motion, HTMLMotionProps } from 'framer-motion';
 import { ReactNode } from 'react';
 import clsx from 'clsx';
+import { iosGentleSpring } from '@/lib/motion';
 
 interface GlassCardProps extends Omit<HTMLMotionProps<'div'>, 'children'> {
   children: ReactNode;
@@ -37,9 +38,9 @@ export default function GlassCard({
   return (
     <motion.div
       className={base}
-      whileHover={hover ? { scale: 1.015, y: -3 } : undefined}
-      whileTap={tap ? { scale: 0.985 } : undefined}
-      transition={{ type: 'spring', stiffness: 320, damping: 26, mass: 0.9 }}
+      whileHover={hover ? { scale: 1.012, y: -2 } : undefined}
+      whileTap={tap ? { scale: 0.988 } : undefined}
+      transition={iosGentleSpring}
       {...props}
     >
       <div className="pointer-events-none absolute inset-0 rounded-[28px] bg-gradient-to-b from-white/10 via-transparent to-transparent opacity-80" />
