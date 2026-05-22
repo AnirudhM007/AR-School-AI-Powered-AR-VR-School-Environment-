@@ -153,7 +153,7 @@ export default function ARPage() {
   };
 
   const handleTouchEnd = (event: React.TouchEvent) => {
-    if (state !== 'active' || !planeReady || touchState.current.moved) return;
+    if (state !== 'active' || !planeReady || touchState.current.moved || placedPosition) return;
 
     const target = event.target as HTMLElement | null;
     if (target?.closest('button, a, input, textarea')) return;
@@ -180,6 +180,10 @@ export default function ARPage() {
   const handlePlaceModel = (position: Vec3) => {
     setPlacedPosition(position);
     reticlePositionRef.current = position;
+    setShowInfoPanel(true);
+    if (!selectedAnnotation && topic.annotations.length > 0) {
+      setSelectedAnnotation(topic.annotations[0]);
+    }
     setModelTransform((current) => ({
       ...current,
       position: [0, 0, 0],
@@ -191,7 +195,7 @@ export default function ARPage() {
       ? 'Starting AR session...'
       : state === 'active'
         ? placedPosition
-          ? 'Tap another detected surface to reposition, or use controls to refine the model.'
+          ? 'Model placed. Use move, rotate, scale, or reset to place it again.'
           : planeReady
             ? 'Surface detected. Tap anywhere to place the object on the plane.'
             : 'Scan the room slowly until a floor or table plane is detected.'
@@ -254,6 +258,44 @@ export default function ARPage() {
         </AnimatePresence>
       </div>
 
+      {showInfoPanel && placedPosition ? (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative z-10 mt-3 px-4"
+        >
+          <div className="glass-fast rounded-[24px] px-3 py-3">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <div>
+                <p className="screen-kicker">Heart Labels</p>
+                <p className="text-sm font-semibold text-white">
+                  {selectedAnnotation?.label ?? 'Tap a label to inspect that part'}
+                </p>
+              </div>
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/55">
+                On-screen guide
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {topic.annotations.map((annotation) => (
+                <button
+                  key={annotation.id}
+                  type="button"
+                  onClick={() => setSelectedAnnotation(annotation)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                    selectedAnnotation?.id === annotation.id
+                      ? 'glass-purple text-brand-accent'
+                      : 'glass text-white/70'
+                  }`}
+                >
+                  {annotation.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      ) : null}
+
       <motion.div initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.12 }} className="absolute right-4 top-1/4 z-10 flex flex-col gap-3">
         <FloatingButton
           size="sm"
@@ -288,6 +330,7 @@ export default function ARPage() {
                     pathname: '/ai',
                     query: {
                       topic: topic.id,
+                      from: `/viewer/${topic.id}`,
                       part: selectedAnnotation?.id,
                       prompt: aiContext?.prompt,
                     },
@@ -378,10 +421,10 @@ export default function ARPage() {
                 </div>
                 <div className="space-y-3 text-sm text-white/65">
                   <p><span className="font-semibold text-white">Placement:</span> move the device until the reticle locks on a real surface, then tap to place.</p>
-                  <p><span className="font-semibold text-white">Move:</span> after placement, drag to reposition the model.</p>
+                  <p><span className="font-semibold text-white">Move:</span> after placement, drag to reposition the model without re-placing it.</p>
                   <p><span className="font-semibold text-white">Rotate:</span> drag to turn the model and inspect different angles.</p>
                   <p><span className="font-semibold text-white">Scale:</span> pinch with two fingers to resize the model.</p>
-                  <p><span className="font-semibold text-white">Info:</span> open part labels and jump into an AI explanation.</p>
+                  <p><span className="font-semibold text-white">Info:</span> open part labels like Aorta, Atria, and Ventricles, then jump into an AI explanation.</p>
                 </div>
                 <button onClick={() => setShowHelp(false)} className="mt-5 w-full rounded-full bg-gradient-primary px-4 py-3 text-sm font-semibold text-white">
                   Close
