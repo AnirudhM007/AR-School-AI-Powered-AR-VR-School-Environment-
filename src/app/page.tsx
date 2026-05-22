@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Menu, Search, Sparkles } from 'lucide-react';
+import { Menu, Sparkles } from 'lucide-react';
 import SearchBar from '@/components/SearchBar';
 import GlassCard from '@/components/GlassCard';
+import InstallAppButton from '@/components/InstallAppButton';
 import { CLASSES, TOPICS } from '@/lib/topics';
 
 const containerVariants = {
@@ -39,7 +40,10 @@ export default function HomePage() {
         className="screen-header mb-6"
       >
         <div className="flex items-center gap-3">
-          <motion.button whileTap={{ scale: 0.92 }} className="glass h-11 w-11 rounded-[20px] grid place-items-center">
+          <motion.button
+            whileTap={{ scale: 0.92 }}
+            className="glass h-11 w-11 rounded-[20px] grid place-items-center"
+          >
             <Menu size={18} className="text-white/80" />
           </motion.button>
           <div>
@@ -47,8 +51,11 @@ export default function HomePage() {
             <h1 className="screen-title text-gradient">Hello, Student!</h1>
           </div>
         </div>
-        <div className="glass-purple flex h-11 w-11 items-center justify-center rounded-[20px] text-lg">
-          🧑🏽
+        <div className="flex items-center gap-3">
+          <InstallAppButton />
+          <div className="glass-purple flex h-11 min-w-11 items-center justify-center rounded-[20px] px-3 text-sm font-semibold text-white/85">
+            You
+          </div>
         </div>
       </motion.section>
 
@@ -58,10 +65,16 @@ export default function HomePage() {
         transition={{ delay: 0.08 }}
         className="screen-subtitle mb-5 max-w-sm"
       >
-        Pick a class, open a 3D lesson, and jump into a smooth AR learning flow with instant explanations.
+        Pick a class, open a 3D lesson, and jump into a smooth AR learning flow with instant
+        explanations.
       </motion.p>
 
-      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="mb-6">
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.12 }}
+        className="mb-6"
+      >
         <SearchBar
           placeholder="Search classes, topics, or concepts..."
           onSearch={setQuery}
@@ -102,7 +115,12 @@ export default function HomePage() {
         </Link>
       </motion.div>
 
-      <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.22 }} className="mb-7">
+      <motion.section
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.22 }}
+        className="mb-7"
+      >
         <div className="mb-3 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-white">Explore by Class</h2>
@@ -113,12 +131,19 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-3 gap-3">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-3 gap-3"
+        >
           {filteredClasses.map((cls) => (
             <motion.div key={cls.id} variants={itemVariants}>
               <Link href={`/topics/${cls.id}`}>
                 <GlassCard className="p-3.5">
-                  <div className={`mb-3 flex h-14 w-14 items-center justify-center rounded-[20px] bg-gradient-to-br ${cls.color} text-2xl shadow-glow-sm`}>
+                  <div
+                    className={`mb-3 flex h-14 w-14 items-center justify-center rounded-[20px] bg-gradient-to-br ${cls.color} text-2xl shadow-glow-sm`}
+                  >
                     {cls.emoji}
                   </div>
                   <h3 className="text-sm font-semibold text-white">{cls.label}</h3>
@@ -144,7 +169,9 @@ export default function HomePage() {
             <Link href={`/viewer/${topic.id}`} key={topic.id}>
               <GlassCard className="p-4">
                 <div className="flex items-center gap-4">
-                  <div className={`flex h-14 w-14 items-center justify-center rounded-[20px] bg-gradient-to-br ${topic.color} text-3xl shadow-glow-sm`}>
+                  <div
+                    className={`flex h-14 w-14 items-center justify-center rounded-[20px] bg-gradient-to-br ${topic.color} text-3xl shadow-glow-sm`}
+                  >
                     {topic.thumbnail}
                   </div>
                   <div className="min-w-0 flex-1">

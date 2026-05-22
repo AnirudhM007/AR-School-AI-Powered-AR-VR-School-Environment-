@@ -169,12 +169,12 @@ export default function ARPage() {
       setShowExitModal(true);
       return;
     }
-    router.back();
+    router.push('/');
   };
 
   const confirmExit = () => {
     end();
-    router.back();
+    router.push('/');
   };
 
   const handlePlaceModel = (position: Vec3) => {

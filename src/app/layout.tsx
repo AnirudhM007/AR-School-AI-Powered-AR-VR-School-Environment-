@@ -3,6 +3,7 @@ import { Manrope, Sora } from 'next/font/google';
 import './globals.css';
 import BottomNav from '@/components/BottomNav';
 import DevPreviewReset from '@/components/DevPreviewReset';
+import MobileLaunchHome from '@/components/MobileLaunchHome';
 
 const bodyFont = Manrope({
   subsets: ['latin'],
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         suppressHydrationWarning
       >
         <DevPreviewReset />
+        <MobileLaunchHome />
         {children}
         <BottomNav />
       </body>
