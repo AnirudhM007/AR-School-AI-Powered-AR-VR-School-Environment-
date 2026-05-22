@@ -22,7 +22,7 @@ import GlassCard from '@/components/GlassCard';
 import FloatingButton from '@/components/FloatingButton';
 import { buildTopicContext, getTopicById } from '@/lib/topics';
 import { useARSession } from '@/hooks/useARSession';
-import { TopicAnnotation } from '@/lib/types';
+import { TopicAnnotation, Vec3 } from '@/lib/types';
 
 const ModelCanvas = dynamic(() => import('@/components/ModelCanvas'), { ssr: false });
 
@@ -39,6 +39,8 @@ export default function ARPage() {
   const [showExitModal, setShowExitModal] = useState(false);
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [activeControl, setActiveControl] = useState<ControlId | null>('move');
+  const [planeReady, setPlaneReady] = useState(false);
+  const [placedPosition, setPlacedPosition] = useState<Vec3 | null>(null);
   const [selectedAnnotation, setSelectedAnnotation] = useState<TopicAnnotation | null>(
     topic?.annotations[0] ?? null,
   );
@@ -53,7 +55,9 @@ export default function ARPage() {
     lastY: 0,
     initialDistance: 0,
     initialScale: 1,
+    moved: false,
   });
+  const reticlePositionRef = useRef<Vec3 | null>(null);
 
   const aiContext = useMemo(
     () => buildTopicContext(topic, selectedAnnotation?.id),
@@ -66,6 +70,8 @@ export default function ARPage() {
 
   useEffect(() => {
     if (activeControl === 'reset') {
+      setPlacedPosition(null);
+      setPlaneReady(false);
       setModelTransform({
         position: [0, 0, 0],
         rotation: [0, 0, 0],
@@ -86,7 +92,9 @@ export default function ARPage() {
   }
 
   const handleTouchStart = (event: React.TouchEvent) => {
-    if (!activeControl || activeControl === 'reset' || state !== 'active') return;
+    touchState.current.moved = false;
+
+    if (!activeControl || activeControl === 'reset' || state !== 'active' || !placedPosition) return;
 
     if (activeControl === 'scale' && event.touches.length === 2) {
       const dx = event.touches[0].clientX - event.touches[1].clientX;
@@ -103,7 +111,7 @@ export default function ARPage() {
   };
 
   const handleTouchMove = (event: React.TouchEvent) => {
-    if (!activeControl || activeControl === 'reset' || state !== 'active') return;
+    if (!activeControl || activeControl === 'reset' || state !== 'active' || !placedPosition) return;
 
     if (activeControl === 'scale') {
       if (event.touches.length === 2) {
@@ -115,6 +123,7 @@ export default function ARPage() {
           ...current,
           scale: Math.max(0.12, touchState.current.initialScale * scaleDelta),
         }));
+        touchState.current.moved = true;
       }
       return;
     }
@@ -122,6 +131,7 @@ export default function ARPage() {
     if (event.touches.length === 1) {
       const dx = event.touches[0].clientX - touchState.current.lastX;
       const dy = event.touches[0].clientY - touchState.current.lastY;
+      touchState.current.moved = touchState.current.moved || Math.abs(dx) > 3 || Math.abs(dy) > 3;
 
       if (activeControl === 'rotate') {
         setModelTransform((current) => ({
@@ -133,12 +143,24 @@ export default function ARPage() {
       if (activeControl === 'move') {
         setModelTransform((current) => ({
           ...current,
-          position: [current.position[0] + dx * 0.0045, current.position[1] - dy * 0.0045, current.position[2]],
+          position: [current.position[0] + dx * 0.0038, current.position[1], current.position[2] + dy * 0.0038],
         }));
       }
 
       touchState.current.lastX = event.touches[0].clientX;
       touchState.current.lastY = event.touches[0].clientY;
+    }
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent) => {
+    if (state !== 'active' || !planeReady || touchState.current.moved) return;
+
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('button, a, input, textarea')) return;
+
+    const nextPosition = reticlePositionRef.current;
+    if (nextPosition) {
+      handlePlaceModel(nextPosition);
     }
   };
 
@@ -155,32 +177,60 @@ export default function ARPage() {
     router.back();
   };
 
+  const handlePlaceModel = (position: Vec3) => {
+    setPlacedPosition(position);
+    reticlePositionRef.current = position;
+    setModelTransform((current) => ({
+      ...current,
+      position: [0, 0, 0],
+    }));
+  };
+
+  const statusCopy =
+    state === 'starting'
+      ? 'Starting AR session...'
+      : state === 'active'
+        ? placedPosition
+          ? 'Tap another detected surface to reposition, or use controls to refine the model.'
+          : planeReady
+            ? 'Surface detected. Tap anywhere to place the object on the plane.'
+            : 'Scan the room slowly until a floor or table plane is detected.'
+        : null;
+
   return (
     <main
       className={`fixed inset-0 z-50 overflow-hidden ${state === 'active' ? 'bg-transparent' : 'gradient-bg'}`}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      style={{ touchAction: 'none' }}
     >
       <div className="absolute inset-0">
         <ModelCanvas
           modelUrl={topic.modelUrl}
           autoRotate={state !== 'active'}
           xrSession={session}
+          placedPosition={placedPosition}
           transformPosition={modelTransform.position}
           transformRotation={modelTransform.rotation}
           transformScale={modelTransform.scale}
           modelScale={topic.modelScale}
+          onPlace={handlePlaceModel}
+          onTrackingChange={setPlaneReady}
+          onReticlePositionChange={(position) => {
+            reticlePositionRef.current = position;
+          }}
         />
       </div>
 
       <motion.div initial={{ opacity: 0, y: -18 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 flex items-center justify-between px-4 pt-8">
-        <button onClick={handleBack} className="glass-strong grid h-11 w-11 place-items-center rounded-[20px]">
+        <button onClick={handleBack} className="glass-fast grid h-11 w-11 place-items-center rounded-[20px]">
           {state === 'active' ? <X size={18} className="text-white/80" /> : <ArrowLeft size={18} className="text-white/80" />}
         </button>
         <GlassCard className="px-4 py-2" hover={false} tap={false}>
           <p className="text-sm font-semibold text-white">{topic.title}</p>
         </GlassCard>
-        <button className="glass-strong grid h-11 w-11 place-items-center rounded-[20px]">
+        <button className="glass-fast grid h-11 w-11 place-items-center rounded-[20px]">
           <Volume2 size={18} className="text-white/80" />
         </button>
       </motion.div>
@@ -188,13 +238,13 @@ export default function ARPage() {
       <div className="relative z-10 mt-4 flex justify-center px-4">
         <AnimatePresence mode="wait">
           {state === 'starting' ? (
-            <motion.div key="starting" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="glass-strong rounded-full px-5 py-3 text-sm text-white/75">
-              Starting AR session...
+            <motion.div key="starting" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="glass-fast rounded-full px-5 py-3 text-sm text-white/75">
+              {statusCopy}
             </motion.div>
           ) : state === 'active' ? (
-            <motion.div key="active" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="glass-strong flex items-center gap-2 rounded-full px-5 py-3 text-sm text-white/75">
-              <Move size={15} className="text-brand-accent" />
-              Move your device, then use the controls to place and inspect the model.
+            <motion.div key="active" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="glass-fast flex items-center gap-2 rounded-full px-5 py-3 text-sm text-white/75">
+              <Move size={15} className={planeReady ? 'text-brand-accent' : 'text-white/45'} />
+              {statusCopy}
             </motion.div>
           ) : state === 'unsupported' || state === 'error' ? (
             <motion.div key="fallback" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="glass-strong max-w-sm rounded-[24px] px-5 py-4 text-center text-sm text-white/70">
@@ -265,7 +315,7 @@ export default function ARPage() {
           </motion.div>
         ) : null}
 
-        <div className="glass-strong rounded-[30px] px-4 py-4">
+        <div className="glass-fast rounded-[30px] px-4 py-4">
           <div className="mb-3 flex items-center justify-between">
             <p className="text-sm font-semibold text-white">Use controls to interact</p>
             <button onClick={() => setShowHelp(true)} className="text-xs font-semibold text-brand-accent">
@@ -282,9 +332,10 @@ export default function ARPage() {
               <button
                 key={id}
                 onClick={() => setActiveControl(id)}
-                className="flex flex-col items-center gap-2"
+                disabled={!placedPosition && id !== 'reset'}
+                className="flex flex-col items-center gap-2 disabled:opacity-45"
               >
-                <div className={`grid h-11 w-11 place-items-center rounded-[18px] transition ${activeControl === id ? 'glass-purple text-brand-accent' : 'glass text-white/65'}`}>
+                <div className={`grid h-11 w-11 place-items-center rounded-[18px] transition ${activeControl === id ? 'glass-purple text-brand-accent' : 'glass-fast text-white/65'}`}>
                   <Icon size={17} />
                 </div>
                 <span className={`text-[11px] font-semibold ${activeControl === id ? 'text-brand-accent' : 'text-white/45'}`}>{label}</span>
@@ -326,7 +377,8 @@ export default function ARPage() {
                   </div>
                 </div>
                 <div className="space-y-3 text-sm text-white/65">
-                  <p><span className="font-semibold text-white">Move:</span> drag to reposition the model in front of you.</p>
+                  <p><span className="font-semibold text-white">Placement:</span> move the device until the reticle locks on a real surface, then tap to place.</p>
+                  <p><span className="font-semibold text-white">Move:</span> after placement, drag to reposition the model.</p>
                   <p><span className="font-semibold text-white">Rotate:</span> drag to turn the model and inspect different angles.</p>
                   <p><span className="font-semibold text-white">Scale:</span> pinch with two fingers to resize the model.</p>
                   <p><span className="font-semibold text-white">Info:</span> open part labels and jump into an AI explanation.</p>
