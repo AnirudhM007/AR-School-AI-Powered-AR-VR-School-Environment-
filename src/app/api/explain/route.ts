@@ -38,8 +38,15 @@ function getMockResponse(question: string, topic?: string, selectedLabel?: strin
 }
 
 export async function POST(req: NextRequest) {
+  let fallbackQuestion = '';
+  let fallbackTopic = '';
+  let fallbackSelectedLabel = '';
+
   try {
     const { question, topic, selectedLabel } = await req.json();
+    fallbackQuestion = question ?? '';
+    fallbackTopic = topic ?? '';
+    fallbackSelectedLabel = selectedLabel ?? '';
 
     if (!question || typeof question !== 'string') {
       return NextResponse.json({ error: 'Missing question' }, { status: 400 });
@@ -76,16 +83,24 @@ Return 1-3 related short topics in a JSON array field named "relatedTopics".`;
       });
 
       if (!response.ok) {
-        throw new Error(`OpenAI error: ${response.status}`);
+        const mock = getMockResponse(question, topic, selectedLabel);
+        return NextResponse.json(mock);
       }
 
       const data = await response.json();
-      const answer = data.choices?.[0]?.message?.content ?? '';
+      const answer = typeof data.choices?.[0]?.message?.content === 'string'
+        ? data.choices[0].message.content
+        : '';
       const topicsMatch = answer.match(/"relatedTopics"\s*:\s*\[([^\]]+)\]/);
       const relatedTopics = topicsMatch
         ? topicsMatch[1].split(',').map((entry: string) => entry.trim().replace(/"/g, ''))
         : ['Science', 'Learning'];
       const cleanAnswer = answer.replace(/\{[\s\S]*"relatedTopics"[\s\S]*\}/g, '').trim();
+
+      if (!cleanAnswer) {
+        const mock = getMockResponse(question, topic, selectedLabel);
+        return NextResponse.json(mock);
+      }
 
       return NextResponse.json({ answer: cleanAnswer, relatedTopics });
     }
@@ -95,12 +110,7 @@ Return 1-3 related short topics in a JSON array field named "relatedTopics".`;
     return NextResponse.json(mock);
   } catch (err) {
     console.error('/api/explain error:', err);
-    return NextResponse.json(
-      {
-        answer: 'Sorry, I had trouble processing that. Please try again.',
-        relatedTopics: [],
-      },
-      { status: 500 },
-    );
+    const mock = getMockResponse(fallbackQuestion, fallbackTopic, fallbackSelectedLabel);
+    return NextResponse.json(mock);
   }
 }

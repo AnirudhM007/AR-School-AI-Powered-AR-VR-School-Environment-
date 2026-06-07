@@ -23,7 +23,7 @@ import FloatingButton from '@/components/FloatingButton';
 import { useAnnotations } from '@/hooks/useAnnotations';
 import { useARSession } from '@/hooks/useARSession';
 import { getTopicById } from '@/lib/topics';
-import { TopicAnnotation, Vec3 } from '@/lib/types';
+import { Quat, TopicAnnotation, Vec3, XRPlacement } from '@/lib/types';
 
 const ModelCanvas = dynamic(() => import('@/components/ModelCanvas'), { ssr: false });
 
@@ -43,6 +43,8 @@ export default function ARPage() {
   const [activeControl, setActiveControl] = useState<ControlId | null>('move');
   const [planeReady, setPlaneReady] = useState(false);
   const [placedPosition, setPlacedPosition] = useState<Vec3 | null>(null);
+  const [placedRotation, setPlacedRotation] = useState<Quat | null>(null);
+  const [placementAnchor, setPlacementAnchor] = useState<XRAnchor | null>(null);
   const [selectedAnnotation, setSelectedAnnotation] = useState<TopicAnnotation | null>(null);
   const [modelTransform, setModelTransform] = useState({
     position: [0, 0, 0] as [number, number, number],
@@ -58,6 +60,7 @@ export default function ARPage() {
     moved: false,
   });
   const reticlePositionRef = useRef<Vec3 | null>(null);
+  const placementCommittedRef = useRef(false);
 
   const annotationNames = useMemo(
     () => annotations.map((annotation) => annotation.label).slice(0, 3).join(', '),
@@ -79,6 +82,9 @@ export default function ARPage() {
   useEffect(() => {
     if (activeControl === 'reset') {
       setPlacedPosition(null);
+      setPlacedRotation(null);
+      setPlacementAnchor(null);
+      placementCommittedRef.current = false;
       setPlaneReady(false);
       setSelectedAnnotation(null);
       setShowInfoPanel(false);
@@ -103,6 +109,9 @@ export default function ARPage() {
 
   const handleTouchStart = (event: React.TouchEvent) => {
     touchState.current.moved = false;
+    if (!placedPosition) {
+      placementCommittedRef.current = false;
+    }
 
     if (!activeControl || activeControl === 'reset' || state !== 'active' || !placedPosition) return;
 
@@ -163,7 +172,7 @@ export default function ARPage() {
   };
 
   const handleTouchEnd = (event: React.TouchEvent) => {
-    if (state !== 'active' || !planeReady || touchState.current.moved || placedPosition) return;
+    if (state !== 'active' || !planeReady || touchState.current.moved || placedPosition || placementCommittedRef.current) return;
 
     const target = event.target as HTMLElement | null;
     if (target?.closest('button, a, input, textarea')) return;
@@ -187,9 +196,20 @@ export default function ARPage() {
     router.push('/');
   };
 
-  const handlePlaceModel = (position: Vec3) => {
-    setPlacedPosition(position);
-    reticlePositionRef.current = position;
+  const handlePlaceModel = (placement: XRPlacement | Vec3) => {
+    const resolvedPlacement = Array.isArray(placement)
+      ? {
+          position: placement,
+          rotation: [0, 0, 0, 1] as Quat,
+          anchor: null,
+        }
+      : placement;
+
+    placementCommittedRef.current = true;
+    setPlacedPosition(resolvedPlacement.position);
+    setPlacedRotation(resolvedPlacement.rotation);
+    setPlacementAnchor(resolvedPlacement.anchor ?? null);
+    reticlePositionRef.current = resolvedPlacement.position;
     setModelTransform((current) => ({
       ...current,
       position: [0, 0, 0],
@@ -223,13 +243,18 @@ export default function ARPage() {
           autoRotate={state !== 'active'}
           xrSession={session}
           placedPosition={placedPosition}
+          placedRotation={placedRotation}
+          placementAnchor={placementAnchor}
           transformPosition={modelTransform.position}
           transformRotation={modelTransform.rotation}
           transformScale={modelTransform.scale}
           modelScale={topic.modelScale}
+          arPlacementOffset={topic.arPlacementOffset}
           annotations={annotations}
           selectedAnnotationId={selectedAnnotation?.id}
           showProjectedLabels={showInfoPanel && Boolean(placedPosition)}
+          labelOverlayBottomInset={selectedAnnotation ? 308 : 210}
+          focusSelectedLabel={Boolean(selectedAnnotation)}
           onSelectAnnotation={setSelectedAnnotation}
           onPlace={handlePlaceModel}
           onTrackingChange={setPlaneReady}

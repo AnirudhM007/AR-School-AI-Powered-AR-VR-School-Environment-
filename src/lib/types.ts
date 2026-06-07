@@ -7,6 +7,13 @@ export type TopicCategory =
   | 'Earth';
 
 export type Vec3 = [number, number, number];
+export type Quat = [number, number, number, number];
+
+export interface XRPlacement {
+  position: Vec3;
+  rotation: Quat;
+  anchor?: XRAnchor | null;
+}
 
 export interface TopicAnnotation {
   id: string;
@@ -41,6 +48,7 @@ export interface TopicCard {
   classIds: string[];
   modelScale?: number;
   modelPosition?: Vec3;
+  arPlacementOffset?: Vec3;
   annotations: TopicAnnotation[];
 }
 

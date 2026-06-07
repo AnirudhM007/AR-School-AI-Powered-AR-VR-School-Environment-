@@ -46,7 +46,7 @@ export function useARSession(): UseARSessionReturn {
 
       const session = await navigator.xr.requestSession('immersive-ar', {
         requiredFeatures: ['hit-test', 'dom-overlay'],
-        optionalFeatures: ['local-floor', 'bounded-floor'],
+        optionalFeatures: ['local-floor', 'bounded-floor', 'anchors'],
         domOverlay: { root: document.body },
       });
 

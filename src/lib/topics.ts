@@ -219,6 +219,7 @@ export const TOPICS: TopicCard[] = [
     modelUrl: '/models/human-heart.glb',
     classIds: ['6', '7', '8', '9', '10'],
     modelScale: 1.3,
+    arPlacementOffset: [0, 0.16, 0],
     annotations: heartAnnotations,
   },
   {

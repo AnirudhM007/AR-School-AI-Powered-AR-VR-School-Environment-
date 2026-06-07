@@ -58,7 +58,7 @@ export default function AnnotationPanel({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
-          className="glass-strong rounded-[28px] p-4"
+          className="glass-strong relative z-20 rounded-[28px] p-4"
         >
           <div className="mb-3 flex items-start justify-between gap-4">
             <div>

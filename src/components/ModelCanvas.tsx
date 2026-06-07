@@ -4,11 +4,11 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { Canvas, ThreeEvent, useFrame, useThree } from '@react-three/fiber';
 import { Center, ContactShadows, Environment, Float, Html, OrbitControls, useGLTF } from '@react-three/drei';
 import { motion } from 'framer-motion';
-import { DoubleSide, Group, Matrix4, Object3D, Vector3 } from 'three';
+import { DoubleSide, Group, Matrix4, Object3D, Quaternion, Vector3 } from 'three';
 import LabelOverlay from '@/components/LabelOverlay';
 import { useModelRotation } from '@/hooks/useModelRotation';
 import { iosSpring } from '@/lib/motion';
-import { TopicAnnotation, Vec3 } from '@/lib/types';
+import { Quat, TopicAnnotation, Vec3, XRPlacement } from '@/lib/types';
 import { ProjectedAnnotation } from '@/types/annotation';
 
 type XRTransientSource = XRTransientInputHitTestSource;
@@ -537,6 +537,43 @@ function LoadingFallback() {
   );
 }
 
+function XRPlacementRoot({
+  anchor,
+  basePosition,
+  baseRotation,
+  children,
+}: {
+  anchor?: XRAnchor | null;
+  basePosition: Vec3;
+  baseRotation: Quat;
+  children: React.ReactNode;
+}) {
+  const { gl } = useThree();
+  const rootRef = useRef<Group>(null);
+  const matrixRef = useRef(new Matrix4());
+  const scaleRef = useRef(new Vector3());
+
+  useEffect(() => {
+    if (!rootRef.current || anchor) return;
+    rootRef.current.position.set(basePosition[0], basePosition[1], basePosition[2]);
+    rootRef.current.quaternion.set(baseRotation[0], baseRotation[1], baseRotation[2], baseRotation[3]);
+  }, [anchor, basePosition, baseRotation]);
+
+  useFrame((_state, _delta, xrFrame) => {
+    if (!anchor || !rootRef.current || !xrFrame) return;
+    const referenceSpace = gl.xr.getReferenceSpace();
+    if (!referenceSpace) return;
+
+    const pose = xrFrame.getPose(anchor.anchorSpace, referenceSpace);
+    if (!pose) return;
+
+    matrixRef.current.fromArray(pose.transform.matrix);
+    matrixRef.current.decompose(rootRef.current.position, rootRef.current.quaternion, scaleRef.current);
+  });
+
+  return <group ref={rootRef}>{children}</group>;
+}
+
 function XRBridge({ session }: { session?: XRSession | null }) {
   const { gl } = useThree();
 
@@ -560,7 +597,7 @@ function XRHitTestController({
   onReticlePositionChange,
 }: {
   active: boolean;
-  onPlace?: (position: Vec3) => void;
+  onPlace?: (placement: XRPlacement) => void;
   onTrackingChange?: (ready: boolean) => void;
   onReticlePositionChange?: (position: Vec3 | null) => void;
 }) {
@@ -571,6 +608,7 @@ function XRHitTestController({
   const referenceSpaceRef = useRef<XRReferenceSpace | null>(null);
   const viewerSpaceRef = useRef<XRReferenceSpace | null>(null);
   const matrixRef = useRef(new Matrix4());
+  const quaternionRef = useRef(new Quaternion());
   const scaleRef = useRef(new Vector3());
   const readyRef = useRef(false);
   const lastPublishedReticleRef = useRef<Vec3 | null>(null);
@@ -606,7 +644,7 @@ function XRHitTestController({
       }
     };
 
-    const handleSelect = (event: XRInputSourceEvent) => {
+    const handleSelect = async (event: XRInputSourceEvent) => {
       const referenceSpace = referenceSpaceRef.current ?? gl.xr.getReferenceSpace();
       if (!referenceSpace || !onPlace) return;
 
@@ -622,8 +660,14 @@ function XRHitTestController({
           const pose = hit.getPose(referenceSpace);
           if (!pose) continue;
 
+          const anchor = hit.createAnchor ? await hit.createAnchor().catch(() => null) : null;
           const { x, y, z } = pose.transform.position;
-          onPlace([x, y, z]);
+          const { x: qx, y: qy, z: qz, w: qw } = pose.transform.orientation;
+          onPlace({
+            position: [x, y, z],
+            rotation: [qx, qy, qz, qw],
+            anchor,
+          });
           placed = true;
           break;
         }
@@ -631,7 +675,16 @@ function XRHitTestController({
 
       if (!placed && reticleRef.current?.visible) {
         const { x, y, z } = reticleRef.current.position;
-        onPlace([x, y, z]);
+        onPlace({
+          position: [x, y, z],
+          rotation: [
+            reticleRef.current.quaternion.x,
+            reticleRef.current.quaternion.y,
+            reticleRef.current.quaternion.z,
+            reticleRef.current.quaternion.w,
+          ],
+          anchor: null,
+        });
       }
     };
 
@@ -721,7 +774,8 @@ function XRHitTestController({
     if (!pose) return;
 
     matrixRef.current.fromArray(pose.transform.matrix);
-    matrixRef.current.decompose(reticleRef.current.position, reticleRef.current.quaternion, scaleRef.current);
+    matrixRef.current.decompose(reticleRef.current.position, quaternionRef.current, scaleRef.current);
+    reticleRef.current.quaternion.copy(quaternionRef.current);
     reticleRef.current.visible = true;
 
     const nextReticle: Vec3 = [
@@ -766,18 +820,23 @@ interface ModelCanvasProps {
   className?: string;
   autoRotate?: boolean;
   xrSession?: XRSession | null;
+  placementAnchor?: XRAnchor | null;
   transformPosition?: Vec3;
   transformRotation?: Vec3;
   transformScale?: number;
   placedPosition?: Vec3 | null;
+  placedRotation?: Quat | null;
   modelScale?: number;
+  arPlacementOffset?: Vec3;
   annotations?: TopicAnnotation[];
   showHotspots?: boolean;
   showProjectedLabels?: boolean;
+  labelOverlayBottomInset?: number;
+  focusSelectedLabel?: boolean;
   selectedAnnotationId?: string | null;
   onSelectAnnotation?: (annotation: TopicAnnotation) => void;
   placeholder?: string;
-  onPlace?: (position: Vec3) => void;
+  onPlace?: (placement: XRPlacement) => void;
   onTrackingChange?: (ready: boolean) => void;
   onReticlePositionChange?: (position: Vec3 | null) => void;
 }
@@ -787,14 +846,19 @@ export default function ModelCanvas({
   className,
   autoRotate = true,
   xrSession,
+  placementAnchor = null,
   transformPosition = [0, 0, 0],
   transformRotation = [0, 0, 0],
   transformScale = 1,
   placedPosition = null,
+  placedRotation = null,
   modelScale = 1,
+  arPlacementOffset = [0, 0, 0],
   annotations = [],
   showHotspots = false,
   showProjectedLabels = false,
+  labelOverlayBottomInset = 164,
+  focusSelectedLabel = false,
   selectedAnnotationId,
   onSelectAnnotation,
   placeholder,
@@ -824,10 +888,13 @@ export default function ModelCanvas({
   const basePosition: Vec3 = xrSession
     ? placedPosition ?? [0, -999, 0]
     : [0, -0.12, 0];
-  const finalPosition: Vec3 = [
-    basePosition[0] + transformPosition[0],
-    basePosition[1] + transformPosition[1],
-    basePosition[2] + transformPosition[2],
+  const baseRotation: Quat = xrSession
+    ? placedRotation ?? [0, 0, 0, 1]
+    : [0, 0, 0, 1];
+  const contentPosition: Vec3 = [
+    transformPosition[0] + (xrSession ? arPlacementOffset[0] : 0),
+    transformPosition[1] + (xrSession ? arPlacementOffset[1] : 0),
+    transformPosition[2] + (xrSession ? arPlacementOffset[2] : 0),
   ];
   const handleProjectedAnnotationsChange = useCallback((next: ProjectedAnnotation[]) => {
     setProjectedAnnotations(next);
@@ -879,35 +946,41 @@ export default function ModelCanvas({
         <Suspense fallback={<LoadingFallback />}>
           {modelVisible ? (
             <AutoRotate active={rotating && !xrSession}>
-              <group position={finalPosition} rotation={transformRotation} scale={[transformScale, transformScale, transformScale]}>
-                <Float speed={xrSession ? 0 : 1.15} rotationIntensity={xrSession ? 0 : 0.04} floatIntensity={xrSession ? 0 : 0.12}>
-                  {proceduralModelId ? (
-                    <ProceduralModel
-                      id={proceduralModelId}
-                      annotations={annotations}
-                      showHotspots={showHotspots}
-                      showProjectedLabels={showProjectedLabels}
-                      selectedAnnotationId={selectedAnnotationId}
-                      onSelectAnnotation={onSelectAnnotation}
-                      onProjectedAnnotationsChange={handleProjectedAnnotationsChange}
-                      modelScale={modelScale}
-                      xrSession={xrSession}
-                    />
-                  ) : (
-                    <GLTFModel
-                      url={modelUrl}
-                      annotations={annotations}
-                      showHotspots={showHotspots}
-                      showProjectedLabels={showProjectedLabels}
-                      selectedAnnotationId={selectedAnnotationId}
-                      onSelectAnnotation={onSelectAnnotation}
-                      onProjectedAnnotationsChange={handleProjectedAnnotationsChange}
-                      modelScale={modelScale}
-                      xrSession={xrSession}
-                    />
-                  )}
-                </Float>
-              </group>
+              <XRPlacementRoot
+                anchor={placementAnchor}
+                basePosition={basePosition}
+                baseRotation={baseRotation}
+              >
+                <group position={contentPosition} rotation={transformRotation} scale={[transformScale, transformScale, transformScale]}>
+                  <Float speed={xrSession ? 0 : 1.15} rotationIntensity={xrSession ? 0 : 0.04} floatIntensity={xrSession ? 0 : 0.12}>
+                    {proceduralModelId ? (
+                      <ProceduralModel
+                        id={proceduralModelId}
+                        annotations={annotations}
+                        showHotspots={showHotspots}
+                        showProjectedLabels={showProjectedLabels}
+                        selectedAnnotationId={selectedAnnotationId}
+                        onSelectAnnotation={onSelectAnnotation}
+                        onProjectedAnnotationsChange={handleProjectedAnnotationsChange}
+                        modelScale={modelScale}
+                        xrSession={xrSession}
+                      />
+                    ) : (
+                      <GLTFModel
+                        url={modelUrl}
+                        annotations={annotations}
+                        showHotspots={showHotspots}
+                        showProjectedLabels={showProjectedLabels}
+                        selectedAnnotationId={selectedAnnotationId}
+                        onSelectAnnotation={onSelectAnnotation}
+                        onProjectedAnnotationsChange={handleProjectedAnnotationsChange}
+                        modelScale={modelScale}
+                        xrSession={xrSession}
+                      />
+                    )}
+                  </Float>
+                </group>
+              </XRPlacementRoot>
             </AutoRotate>
           ) : null}
           {!xrSession && <Environment preset="city" />}
@@ -936,6 +1009,8 @@ export default function ModelCanvas({
 
       <LabelOverlay
         annotations={projectedAnnotations}
+        bottomInset={labelOverlayBottomInset}
+        focusSelected={focusSelectedLabel}
         selectedId={selectedAnnotationId}
         visible={showProjectedLabels && modelVisible}
         onSelect={handleSelectProjectedAnnotation}

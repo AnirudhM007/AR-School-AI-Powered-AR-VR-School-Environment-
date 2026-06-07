@@ -117,6 +117,8 @@ export default function ViewerPage() {
               autoRotate={autoRotate}
               annotations={annotations}
               showProjectedLabels={showHotspots}
+              labelOverlayBottomInset={selectedAnnotation ? 260 : 132}
+              focusSelectedLabel={Boolean(selectedAnnotation)}
               selectedAnnotationId={selectedAnnotation?.id}
               onSelectAnnotation={setSelectedAnnotation}
               modelScale={topic.modelScale}
