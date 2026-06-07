@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -18,10 +17,12 @@ import {
   X,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import AnnotationPanel from '@/components/AnnotationPanel';
 import GlassCard from '@/components/GlassCard';
 import FloatingButton from '@/components/FloatingButton';
-import { buildTopicContext, getTopicById } from '@/lib/topics';
+import { useAnnotations } from '@/hooks/useAnnotations';
 import { useARSession } from '@/hooks/useARSession';
+import { getTopicById } from '@/lib/topics';
 import { TopicAnnotation, Vec3 } from '@/lib/types';
 
 const ModelCanvas = dynamic(() => import('@/components/ModelCanvas'), { ssr: false });
@@ -34,6 +35,7 @@ export default function ARPage() {
   const topicId = params?.topicId as string;
   const topic = getTopicById(topicId);
   const { state, error, session, start, end } = useARSession();
+  const { annotations } = useAnnotations(topic?.id ?? '', topic?.annotations ?? []);
 
   const [showHelp, setShowHelp] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
@@ -41,9 +43,7 @@ export default function ARPage() {
   const [activeControl, setActiveControl] = useState<ControlId | null>('move');
   const [planeReady, setPlaneReady] = useState(false);
   const [placedPosition, setPlacedPosition] = useState<Vec3 | null>(null);
-  const [selectedAnnotation, setSelectedAnnotation] = useState<TopicAnnotation | null>(
-    topic?.annotations[0] ?? null,
-  );
+  const [selectedAnnotation, setSelectedAnnotation] = useState<TopicAnnotation | null>(null);
   const [modelTransform, setModelTransform] = useState({
     position: [0, 0, 0] as [number, number, number],
     rotation: [0, 0, 0] as [number, number, number],
@@ -59,9 +59,9 @@ export default function ARPage() {
   });
   const reticlePositionRef = useRef<Vec3 | null>(null);
 
-  const aiContext = useMemo(
-    () => buildTopicContext(topic, selectedAnnotation?.id),
-    [selectedAnnotation?.id, topic],
+  const annotationNames = useMemo(
+    () => annotations.map((annotation) => annotation.label).slice(0, 3).join(', '),
+    [annotations],
   );
 
   useEffect(() => {
@@ -69,9 +69,19 @@ export default function ARPage() {
   }, [start]);
 
   useEffect(() => {
+    if (!selectedAnnotation) return;
+    const nextSelected = annotations.find((annotation) => annotation.id === selectedAnnotation.id) ?? null;
+    if (nextSelected !== selectedAnnotation) {
+      setSelectedAnnotation(nextSelected);
+    }
+  }, [annotations, selectedAnnotation]);
+
+  useEffect(() => {
     if (activeControl === 'reset') {
       setPlacedPosition(null);
       setPlaneReady(false);
+      setSelectedAnnotation(null);
+      setShowInfoPanel(false);
       setModelTransform({
         position: [0, 0, 0],
         rotation: [0, 0, 0],
@@ -180,9 +190,6 @@ export default function ARPage() {
   const handlePlaceModel = (position: Vec3) => {
     setPlacedPosition(position);
     reticlePositionRef.current = position;
-    if (!selectedAnnotation && topic.annotations.length > 0) {
-      setSelectedAnnotation(topic.annotations[0]);
-    }
     setModelTransform((current) => ({
       ...current,
       position: [0, 0, 0],
@@ -195,8 +202,8 @@ export default function ARPage() {
       : state === 'active'
         ? placedPosition
           ? showInfoPanel
-            ? 'Model placed. Review the labels, or use move, rotate, scale, or reset.'
-            : 'Model placed. Tap Info to view labels like Aorta, Atria, and Ventricles.'
+            ? 'Model placed. Tap a floating label to open the part information card.'
+            : `Model placed. Tap Info to reveal labels like ${annotationNames || 'Aorta and Left Atrium'}.`
           : planeReady
             ? 'Surface detected. Tap anywhere to place the object on the plane.'
             : 'Scan the room slowly until a floor or table plane is detected.'
@@ -220,6 +227,10 @@ export default function ARPage() {
           transformRotation={modelTransform.rotation}
           transformScale={modelTransform.scale}
           modelScale={topic.modelScale}
+          annotations={annotations}
+          selectedAnnotationId={selectedAnnotation?.id}
+          showProjectedLabels={showInfoPanel && Boolean(placedPosition)}
+          onSelectAnnotation={setSelectedAnnotation}
           onPlace={handlePlaceModel}
           onTrackingChange={setPlaneReady}
           onReticlePositionChange={(position) => {
@@ -259,50 +270,20 @@ export default function ARPage() {
         </AnimatePresence>
       </div>
 
-      {showInfoPanel && placedPosition ? (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative z-10 mt-3 px-4"
-        >
-          <div className="glass-fast rounded-[24px] px-3 py-3">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <div>
-                <p className="screen-kicker">Heart Labels</p>
-                <p className="text-sm font-semibold text-white">
-                  {selectedAnnotation?.label ?? 'Tap a label to inspect that part'}
-                </p>
-              </div>
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/55">
-                On-screen guide
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {topic.annotations.map((annotation) => (
-                <button
-                  key={annotation.id}
-                  type="button"
-                  onClick={() => setSelectedAnnotation(annotation)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                    selectedAnnotation?.id === annotation.id
-                      ? 'glass-purple text-brand-accent'
-                      : 'glass text-white/70'
-                  }`}
-                >
-                  {annotation.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-      ) : null}
-
       <motion.div initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.12 }} className="absolute right-4 top-1/4 z-10 flex flex-col gap-3">
         <FloatingButton
           size="sm"
           variant="glass"
           active={showInfoPanel}
-          onClick={() => setShowInfoPanel((value) => !value)}
+          onClick={() => {
+            setShowInfoPanel((value) => {
+              const nextValue = !value;
+              if (!nextValue) {
+                setSelectedAnnotation(null);
+              }
+              return nextValue;
+            });
+          }}
           icon={<Info size={16} />}
           label="Info"
         />
@@ -318,44 +299,14 @@ export default function ARPage() {
       </motion.div>
 
       <div className="absolute bottom-24 left-0 right-0 z-10 px-4">
-        {showInfoPanel ? (
+        {showInfoPanel && selectedAnnotation ? (
           <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="mb-3">
-            <GlassCard variant="strong" className="p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <div>
-                  <p className="screen-kicker">Interactive Labels</p>
-                  <h2 className="text-base font-semibold text-white">{selectedAnnotation?.label ?? topic.title}</h2>
-                </div>
-                <Link
-                  href={{
-                    pathname: '/ai',
-                    query: {
-                      topic: topic.id,
-                      from: `/viewer/${topic.id}`,
-                      part: selectedAnnotation?.id,
-                      prompt: aiContext?.prompt,
-                    },
-                  }}
-                  className="rounded-full bg-gradient-primary px-3 py-2 text-xs font-semibold text-white"
-                >
-                  Ask AI
-                </Link>
-              </div>
-              <p className="text-sm leading-6 text-white/65">{selectedAnnotation?.description ?? topic.description}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {topic.annotations.map((annotation) => (
-                  <button
-                    key={annotation.id}
-                    onClick={() => setSelectedAnnotation(annotation)}
-                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                      selectedAnnotation?.id === annotation.id ? 'glass-purple text-brand-accent' : 'glass text-white/60'
-                    }`}
-                  >
-                    {annotation.label}
-                  </button>
-                ))}
-              </div>
-            </GlassCard>
+            <AnnotationPanel
+              annotation={selectedAnnotation}
+              topicTitle={topic.title}
+              visible={showInfoPanel}
+              onClose={() => setSelectedAnnotation(null)}
+            />
           </motion.div>
         ) : null}
 
@@ -425,7 +376,7 @@ export default function ARPage() {
                   <p><span className="font-semibold text-white">Move:</span> after placement, drag to reposition the model without re-placing it.</p>
                   <p><span className="font-semibold text-white">Rotate:</span> drag to turn the model and inspect different angles.</p>
                   <p><span className="font-semibold text-white">Scale:</span> pinch with two fingers to resize the model.</p>
-                  <p><span className="font-semibold text-white">Info:</span> open part labels like Aorta, Atria, and Ventricles, then jump into an AI explanation.</p>
+                  <p><span className="font-semibold text-white">Info:</span> reveal floating labels, then tap a label to open a part card and AI explanation.</p>
                 </div>
                 <button onClick={() => setShowHelp(false)} className="mt-5 w-full rounded-full bg-gradient-primary px-4 py-3 text-sm font-semibold text-white">
                   Close

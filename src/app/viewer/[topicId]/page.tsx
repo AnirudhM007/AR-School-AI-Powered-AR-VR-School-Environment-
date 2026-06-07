@@ -1,15 +1,17 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Heart, Info, Maximize2, RotateCw, Sparkles, ZoomIn } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import AnnotationPanel from '@/components/AnnotationPanel';
 import GlassCard from '@/components/GlassCard';
 import FloatingButton from '@/components/FloatingButton';
+import { useAnnotations } from '@/hooks/useAnnotations';
 import { iosFadeDown, iosFadeUp } from '@/lib/motion';
-import { buildTopicContext, getTopicById } from '@/lib/topics';
+import { getTopicById } from '@/lib/topics';
 import { TopicAnnotation } from '@/lib/types';
 
 const ModelCanvas = dynamic(() => import('@/components/ModelCanvas'), { ssr: false });
@@ -23,19 +25,21 @@ export default function ViewerPage() {
   const topicId = params?.topicId as string;
   const topic = getTopicById(topicId);
   const from = searchParams.get('from') ?? '/';
+  const { annotations } = useAnnotations(topic?.id ?? '', topic?.annotations ?? []);
 
   const [liked, setLiked] = useState(false);
   const [activeMode, setActiveMode] = useState<ActiveMode>('info');
   const [autoRotate, setAutoRotate] = useState(true);
   const [expandedCanvas, setExpandedCanvas] = useState(false);
-  const [selectedAnnotation, setSelectedAnnotation] = useState<TopicAnnotation | null>(
-    topic?.annotations[0] ?? null,
-  );
+  const [selectedAnnotation, setSelectedAnnotation] = useState<TopicAnnotation | null>(null);
 
-  const aiContext = useMemo(
-    () => buildTopicContext(topic, selectedAnnotation?.id),
-    [selectedAnnotation?.id, topic],
-  );
+  useEffect(() => {
+    if (!selectedAnnotation) return;
+    const nextSelected = annotations.find((annotation) => annotation.id === selectedAnnotation.id) ?? null;
+    if (nextSelected !== selectedAnnotation) {
+      setSelectedAnnotation(nextSelected);
+    }
+  }, [annotations, selectedAnnotation]);
 
   if (!topic) {
     return (
@@ -67,9 +71,6 @@ export default function ViewerPage() {
     }
 
     setActiveMode((current) => (current === mode ? null : mode));
-    if (mode === 'info' && !selectedAnnotation) {
-      setSelectedAnnotation(topic.annotations[0] ?? null);
-    }
   };
 
   return (
@@ -114,8 +115,8 @@ export default function ViewerPage() {
             <ModelCanvas
               modelUrl={topic.modelUrl}
               autoRotate={autoRotate}
-              annotations={topic.annotations}
-              showHotspots={showHotspots}
+              annotations={annotations}
+              showProjectedLabels={showHotspots}
               selectedAnnotationId={selectedAnnotation?.id}
               onSelectAnnotation={setSelectedAnnotation}
               modelScale={topic.modelScale}
@@ -165,48 +166,57 @@ export default function ViewerPage() {
       </motion.section>
 
       <motion.section initial={iosFadeUp.initial} animate={iosFadeUp.animate} transition={{ ...iosFadeUp.transition, delay: 0.14 }} className="mb-4">
-        <GlassCard variant="strong" className="p-5">
-          <div className="mb-3 flex items-start justify-between gap-4">
-            <div>
-              <p className="screen-kicker">{topic.heroLabel}</p>
-              <h2 className="mt-2 text-xl font-semibold text-white">{selectedAnnotation?.label ?? `About ${topic.title}`}</h2>
+        {showHotspots && selectedAnnotation ? (
+          <AnnotationPanel
+            annotation={selectedAnnotation}
+            topicTitle={topic.title}
+            visible={showHotspots}
+            onClose={() => setSelectedAnnotation(null)}
+          />
+        ) : (
+          <GlassCard variant="strong" className="p-5">
+            <div className="mb-3 flex items-start justify-between gap-4">
+              <div>
+                <p className="screen-kicker">{topic.heroLabel}</p>
+                <h2 className="mt-2 text-xl font-semibold text-white">{`About ${topic.title}`}</h2>
+              </div>
+              <div className="glass-purple rounded-full px-3 py-1 text-[11px] font-semibold text-brand-accent">
+                Tap labels
+              </div>
             </div>
-            <div className="glass-purple rounded-full px-3 py-1 text-[11px] font-semibold text-brand-accent">
-              Tap model pins
-            </div>
-          </div>
 
-          <AnimatePresence mode="wait">
-            <motion.p
-              key={selectedAnnotation?.id ?? 'topic-description'}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              className="text-sm leading-6 text-white/68"
-            >
-              {selectedAnnotation?.description ?? topic.description}
-            </motion.p>
-          </AnimatePresence>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            {topic.annotations.map((annotation) => (
-              <button
-                key={annotation.id}
-                onClick={() => {
-                  setActiveMode('info');
-                  setSelectedAnnotation(annotation);
-                }}
-                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                  selectedAnnotation?.id === annotation.id
-                    ? 'glass-purple text-brand-accent'
-                    : 'glass text-white/60'
-                }`}
+            <AnimatePresence mode="wait">
+              <motion.p
+                key="topic-description"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                className="text-sm leading-6 text-white/68"
               >
-                {annotation.label}
-              </button>
-            ))}
-          </div>
-        </GlassCard>
+                {topic.description}
+              </motion.p>
+            </AnimatePresence>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {annotations.map((annotation) => (
+                <button
+                  key={annotation.id}
+                  onClick={() => {
+                    setActiveMode('info');
+                    setSelectedAnnotation(annotation);
+                  }}
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                    selectedAnnotation?.id === annotation.id
+                      ? 'glass-purple text-brand-accent'
+                      : 'glass text-white/60'
+                  }`}
+                >
+                  {annotation.label}
+                </button>
+              ))}
+            </div>
+          </GlassCard>
+        )}
       </motion.section>
 
       <motion.section initial={iosFadeUp.initial} animate={iosFadeUp.animate} transition={{ ...iosFadeUp.transition, delay: 0.2 }} className="grid gap-4 sm:grid-cols-[1.2fr_0.8fr]">
@@ -224,8 +234,8 @@ export default function ViewerPage() {
               query: {
                 topic: topic.id,
                 from,
-                part: aiContext?.selectedLabel ? selectedAnnotation?.id : undefined,
-                prompt: aiContext?.prompt,
+                part: selectedAnnotation?.id,
+                prompt: selectedAnnotation?.questionPrompt,
               },
             }}
             className="inline-flex rounded-full bg-gradient-primary px-4 py-2.5 text-sm font-semibold text-white shadow-glow-sm"

@@ -1,13 +1,15 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, ThreeEvent, useFrame, useThree } from '@react-three/fiber';
 import { Center, ContactShadows, Environment, Float, Html, OrbitControls, useGLTF } from '@react-three/drei';
 import { motion } from 'framer-motion';
 import { DoubleSide, Group, Matrix4, Object3D, Vector3 } from 'three';
+import LabelOverlay from '@/components/LabelOverlay';
 import { useModelRotation } from '@/hooks/useModelRotation';
 import { iosSpring } from '@/lib/motion';
 import { TopicAnnotation, Vec3 } from '@/lib/types';
+import { ProjectedAnnotation } from '@/types/annotation';
 
 type XRTransientSource = XRTransientInputHitTestSource;
 
@@ -63,20 +65,133 @@ function HotspotBadge({
   );
 }
 
+function areProjectedAnnotationsEqual(
+  previous: ProjectedAnnotation[],
+  next: ProjectedAnnotation[],
+) {
+  if (previous.length !== next.length) return false;
+
+  for (let index = 0; index < previous.length; index += 1) {
+    const before = previous[index];
+    const after = next[index];
+
+    if (
+      before.id !== after.id ||
+      before.align !== after.align ||
+      before.isVisible !== after.isVisible ||
+      Math.abs(before.screenX - after.screenX) > 0.8 ||
+      Math.abs(before.screenY - after.screenY) > 0.8
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function AnnotationAnchors({
+  annotations,
+  active,
+  onChange,
+}: {
+  annotations: TopicAnnotation[];
+  active: boolean;
+  onChange: (annotations: ProjectedAnnotation[]) => void;
+}) {
+  const { camera, size } = useThree();
+  const anchorRefs = useRef<(Group | null)[]>([]);
+  const previousRef = useRef<ProjectedAnnotation[]>([]);
+
+  useEffect(() => {
+    anchorRefs.current = anchorRefs.current.slice(0, annotations.length);
+  }, [annotations.length]);
+
+  useEffect(() => {
+    if (!active) {
+      previousRef.current = [];
+      onChange([]);
+    }
+  }, [active, onChange]);
+
+  useFrame(() => {
+    if (!active || annotations.length === 0) return;
+
+    const next = annotations
+      .map((annotation, index) => {
+        const anchor = anchorRefs.current[index];
+        if (!anchor) return null;
+
+        const worldPosition = new Vector3();
+        const projected = new Vector3();
+
+        anchor.getWorldPosition(worldPosition);
+        projected.copy(worldPosition).project(camera);
+
+        const screenX = ((projected.x + 1) / 2) * size.width;
+        const screenY = ((-projected.y + 1) / 2) * size.height;
+        const isVisible =
+          projected.z > -1 &&
+          projected.z < 1 &&
+          screenX >= -64 &&
+          screenX <= size.width + 64 &&
+          screenY >= -64 &&
+          screenY <= size.height + 64;
+
+        return {
+          id: annotation.id,
+          name: annotation.label,
+          description: annotation.description,
+          position: annotation.position,
+          align: projected.x < 0 ? 'left' : 'right',
+          isVisible,
+          labelX: screenX,
+          labelY: screenY,
+          screenX,
+          screenY,
+          worldPosition: [worldPosition.x, worldPosition.y, worldPosition.z] as Vec3,
+        } satisfies ProjectedAnnotation;
+      })
+      .filter((annotation): annotation is ProjectedAnnotation => Boolean(annotation));
+
+    if (!areProjectedAnnotationsEqual(previousRef.current, next)) {
+      previousRef.current = next;
+      onChange(next);
+    }
+  });
+
+  return (
+    <>
+      {annotations.map((annotation, index) => (
+        <group
+          key={annotation.id}
+          ref={(node) => {
+            anchorRefs.current[index] = node;
+          }}
+          position={annotation.position}
+        />
+      ))}
+    </>
+  );
+}
+
 function GLTFModel({
   url,
   annotations,
   showHotspots,
+  showProjectedLabels,
   selectedAnnotationId,
   onSelectAnnotation,
+  onProjectedAnnotationsChange,
   modelScale = 1,
   xrSession,
 }: {
   url: string;
   annotations: TopicAnnotation[];
   showHotspots: boolean;
+  showProjectedLabels: boolean;
   selectedAnnotationId?: string | null;
   onSelectAnnotation?: (annotation: TopicAnnotation) => void;
+  onProjectedAnnotationsChange?: (annotations: ProjectedAnnotation[]) => void;
   modelScale?: number;
   xrSession?: XRSession | null;
 }) {
@@ -108,7 +223,14 @@ function GLTFModel({
     <group onPointerDown={handlePointerDown}>
       <Center>
         <primitive object={object} scale={1.25 * modelScale} />
-        {showHotspots && !xrSession
+        {showProjectedLabels && onProjectedAnnotationsChange ? (
+          <AnnotationAnchors
+            annotations={annotations}
+            active={showProjectedLabels}
+            onChange={onProjectedAnnotationsChange}
+          />
+        ) : null}
+        {showHotspots && !xrSession && !showProjectedLabels
           ? annotations.map((annotation) => (
               <HotspotBadge
                 key={annotation.id}
@@ -337,16 +459,20 @@ function ProceduralModel({
   id,
   annotations,
   showHotspots,
+  showProjectedLabels,
   selectedAnnotationId,
   onSelectAnnotation,
+  onProjectedAnnotationsChange,
   modelScale = 1,
   xrSession,
 }: {
   id: string;
   annotations: TopicAnnotation[];
   showHotspots: boolean;
+  showProjectedLabels: boolean;
   selectedAnnotationId?: string | null;
   onSelectAnnotation?: (annotation: TopicAnnotation) => void;
+  onProjectedAnnotationsChange?: (annotations: ProjectedAnnotation[]) => void;
   modelScale?: number;
   xrSession?: XRSession | null;
 }) {
@@ -365,7 +491,14 @@ function ProceduralModel({
         <group scale={1.08 * modelScale}>
           <ProceduralContent kind={id} />
         </group>
-        {showHotspots && !xrSession
+        {showProjectedLabels && onProjectedAnnotationsChange ? (
+          <AnnotationAnchors
+            annotations={annotations}
+            active={showProjectedLabels}
+            onChange={onProjectedAnnotationsChange}
+          />
+        ) : null}
+        {showHotspots && !xrSession && !showProjectedLabels
           ? annotations.map((annotation) => (
               <HotspotBadge
                 key={annotation.id}
@@ -640,6 +773,7 @@ interface ModelCanvasProps {
   modelScale?: number;
   annotations?: TopicAnnotation[];
   showHotspots?: boolean;
+  showProjectedLabels?: boolean;
   selectedAnnotationId?: string | null;
   onSelectAnnotation?: (annotation: TopicAnnotation) => void;
   placeholder?: string;
@@ -660,6 +794,7 @@ export default function ModelCanvas({
   modelScale = 1,
   annotations = [],
   showHotspots = false,
+  showProjectedLabels = false,
   selectedAnnotationId,
   onSelectAnnotation,
   placeholder,
@@ -668,13 +803,24 @@ export default function ModelCanvas({
   onReticlePositionChange,
 }: ModelCanvasProps) {
   const [rotating, setRotating] = useState(autoRotate);
+  const [projectedAnnotations, setProjectedAnnotations] = useState<ProjectedAnnotation[]>([]);
 
   useEffect(() => {
     setRotating(autoRotate);
   }, [autoRotate]);
 
+  useEffect(() => {
+    if (!showProjectedLabels) {
+      setProjectedAnnotations([]);
+    }
+  }, [showProjectedLabels]);
+
   const modelVisible = !xrSession || Boolean(placedPosition);
   const proceduralModelId = isProceduralModel(modelUrl) ? getProceduralModelId(modelUrl) : null;
+  const annotationLookup = useMemo(
+    () => new Map(annotations.map((annotation) => [annotation.id, annotation])),
+    [annotations],
+  );
   const basePosition: Vec3 = xrSession
     ? placedPosition ?? [0, -999, 0]
     : [0, -0.12, 0];
@@ -683,6 +829,18 @@ export default function ModelCanvas({
     basePosition[1] + transformPosition[1],
     basePosition[2] + transformPosition[2],
   ];
+  const handleProjectedAnnotationsChange = useCallback((next: ProjectedAnnotation[]) => {
+    setProjectedAnnotations(next);
+  }, []);
+  const handleSelectProjectedAnnotation = useCallback(
+    (annotation: ProjectedAnnotation) => {
+      const selected = annotationLookup.get(annotation.id);
+      if (selected) {
+        onSelectAnnotation?.(selected);
+      }
+    },
+    [annotationLookup, onSelectAnnotation],
+  );
 
   return (
     <div className={`relative h-full w-full ${className ?? ''}`}>
@@ -711,7 +869,7 @@ export default function ModelCanvas({
 
         {xrSession ? (
           <XRHitTestController
-            active={Boolean(xrSession)}
+            active={Boolean(xrSession) && !placedPosition}
             onPlace={onPlace}
             onTrackingChange={onTrackingChange}
             onReticlePositionChange={onReticlePositionChange}
@@ -728,8 +886,10 @@ export default function ModelCanvas({
                       id={proceduralModelId}
                       annotations={annotations}
                       showHotspots={showHotspots}
+                      showProjectedLabels={showProjectedLabels}
                       selectedAnnotationId={selectedAnnotationId}
                       onSelectAnnotation={onSelectAnnotation}
+                      onProjectedAnnotationsChange={handleProjectedAnnotationsChange}
                       modelScale={modelScale}
                       xrSession={xrSession}
                     />
@@ -738,8 +898,10 @@ export default function ModelCanvas({
                       url={modelUrl}
                       annotations={annotations}
                       showHotspots={showHotspots}
+                      showProjectedLabels={showProjectedLabels}
                       selectedAnnotationId={selectedAnnotationId}
                       onSelectAnnotation={onSelectAnnotation}
+                      onProjectedAnnotationsChange={handleProjectedAnnotationsChange}
                       modelScale={modelScale}
                       xrSession={xrSession}
                     />
@@ -759,8 +921,8 @@ export default function ModelCanvas({
         )}
       </Canvas>
 
-      {!xrSession && (
-        <motion.button
+        {!xrSession && (
+          <motion.button
           onClick={() => setRotating((value) => !value)}
           className={`absolute bottom-4 right-4 rounded-full px-3.5 py-2 text-xs font-semibold transition ${
             rotating ? 'glass-purple text-brand-accent' : 'glass text-white/55'
@@ -771,6 +933,13 @@ export default function ModelCanvas({
           {rotating ? 'Auto Rotate On' : 'Auto Rotate Off'}
         </motion.button>
       )}
+
+      <LabelOverlay
+        annotations={projectedAnnotations}
+        selectedId={selectedAnnotationId}
+        visible={showProjectedLabels && modelVisible}
+        onSelect={handleSelectProjectedAnnotation}
+      />
     </div>
   );
 }

@@ -1,0 +1,40 @@
+{
+  "annotations": [
+    {
+      "id": "aorta",
+      "name": "Aorta",
+      "description": "The main artery carrying oxygenated blood from the heart to the body.",
+      "position": [0.08, 1.05, 0.18]
+    },
+    {
+      "id": "left-atrium",
+      "name": "Left Atrium",
+      "description": "Receives oxygen-rich blood returning from the lungs.",
+      "position": [-0.18, 0.62, 0.18]
+    },
+    {
+      "id": "right-atrium",
+      "name": "Right Atrium",
+      "description": "Receives oxygen-poor blood returning from the body.",
+      "position": [0.46, 0.68, 0.1]
+    },
+    {
+      "id": "left-ventricle",
+      "name": "Left Ventricle",
+      "description": "Pumps oxygen-rich blood into the aorta and across the body.",
+      "position": [-0.22, -0.34, 0.26]
+    },
+    {
+      "id": "right-ventricle",
+      "name": "Right Ventricle",
+      "description": "Pumps oxygen-poor blood toward the lungs for oxygenation.",
+      "position": [0.26, -0.28, 0.3]
+    },
+    {
+      "id": "coronary-arteries",
+      "name": "Coronary Arteries",
+      "description": "Blood vessels that supply oxygen and nutrients to the heart muscle.",
+      "position": [0.22, 0.06, 0.38]
+    }
+  ]
+}
