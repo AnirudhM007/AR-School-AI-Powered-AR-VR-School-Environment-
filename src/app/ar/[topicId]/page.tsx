@@ -180,7 +180,6 @@ export default function ARPage() {
   const handlePlaceModel = (position: Vec3) => {
     setPlacedPosition(position);
     reticlePositionRef.current = position;
-    setShowInfoPanel(true);
     if (!selectedAnnotation && topic.annotations.length > 0) {
       setSelectedAnnotation(topic.annotations[0]);
     }
@@ -195,7 +194,9 @@ export default function ARPage() {
       ? 'Starting AR session...'
       : state === 'active'
         ? placedPosition
-          ? 'Model placed. Use move, rotate, scale, or reset to place it again.'
+          ? showInfoPanel
+            ? 'Model placed. Review the labels, or use move, rotate, scale, or reset.'
+            : 'Model placed. Tap Info to view labels like Aorta, Atria, and Ventricles.'
           : planeReady
             ? 'Surface detected. Tap anywhere to place the object on the plane.'
             : 'Scan the room slowly until a floor or table plane is detected.'
