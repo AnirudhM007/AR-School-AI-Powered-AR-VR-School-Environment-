@@ -11,8 +11,24 @@ import { useState } from 'react';
 
 export default function ProfilePage() {
   const [showAuth, setShowAuth] = useState(false);
-  const { badges, profile, quests, recentTopics, signIn, signOut, stats } = useAppState();
+  const { badges, isHydrated, profile, quests, recentTopics, signIn, signOut, stats } = useAppState();
   const { progress, nextLevelXP } = getLevelProgress(profile.xp, profile.level);
+
+  if (!isHydrated) {
+    return (
+      <main className="page-shell px-5 pb-24 pt-12">
+        <div className="mb-6 flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-white">Profile</h1>
+        </div>
+        <GlassCard variant="strong" className="p-6" tap={false} hover={false}>
+          <p className="text-base font-semibold text-white">Loading your saved profile...</p>
+          <p className="mt-2 text-sm text-white/55">
+            Restoring XP, streaks, quizzes, badges, and recent lessons on this device.
+          </p>
+        </GlassCard>
+      </main>
+    );
+  }
 
   return (
     <>

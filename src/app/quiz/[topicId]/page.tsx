@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Zap } from 'lucide-react';
@@ -19,7 +19,6 @@ export default function QuizPage() {
   const [score, setScore] = useState(0);
   const [showResult, setShowResult] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [resultSaved, setResultSaved] = useState(false);
 
   if (!quiz) {
     return (
@@ -40,10 +39,15 @@ export default function QuizPage() {
     setSelectedAnswer(index);
 
     const isCorrect = index === question.correctAnswerIndex;
-    if (isCorrect) setScore((s) => s + 1);
+    const nextScore = score + (isCorrect ? 1 : 0);
+
+    if (isCorrect) {
+      setScore(nextScore);
+    }
 
     setTimeout(() => {
       if (isLastQuestion) {
+        completeQuiz(topicId, nextScore, quiz.questions.length, quiz.rewardXP);
         setShowResult(true);
       } else {
         setCurrentQuestion((c) => c + 1);
@@ -53,12 +57,6 @@ export default function QuizPage() {
   };
 
   const achievedScore = score;
-
-  useEffect(() => {
-    if (!showResult || resultSaved) return;
-    completeQuiz(topicId, achievedScore, quiz.questions.length, quiz.rewardXP);
-    setResultSaved(true);
-  }, [achievedScore, completeQuiz, quiz.questions.length, quiz.rewardXP, resultSaved, showResult, topicId]);
 
   const bestScore = topicProgress[topicId]?.quizBestTotal
     ? `${topicProgress[topicId]?.quizBestScore}/${topicProgress[topicId]?.quizBestTotal}`

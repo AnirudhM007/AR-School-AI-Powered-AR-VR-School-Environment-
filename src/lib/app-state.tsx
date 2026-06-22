@@ -83,6 +83,7 @@ interface SignInPayload {
 
 interface AppStateContextValue {
   badges: AppBadge[];
+  isHydrated: boolean;
   leaderboardCity: typeof LEADERBOARD_CITY;
   leaderboardGlobal: typeof LEADERBOARD_GLOBAL;
   preferences: StoredAppState['preferences'];
@@ -577,6 +578,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<AppStateContextValue>(() => ({
     badges,
+    isHydrated: hydrated,
     leaderboardCity,
     leaderboardGlobal,
     preferences: state.preferences,
@@ -606,6 +608,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   }), [
     badges,
     completeQuiz,
+    hydrated,
     leaderboardCity,
     leaderboardGlobal,
     markAIQuestion,
