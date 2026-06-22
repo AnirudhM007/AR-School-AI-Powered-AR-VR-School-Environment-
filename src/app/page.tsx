@@ -85,12 +85,12 @@ export default function HomePage() {
 
   return (
     <>
-      <main className="page-shell px-5 pt-8">
+      <main className="page-shell px-5 pt-8 sm:px-6">
         <motion.section
           initial={iosFadeDown.initial}
           animate={iosFadeDown.animate}
           transition={iosFadeDown.transition}
-          className="screen-header mb-6"
+          className="screen-header mb-7"
         >
           <div className="flex items-center gap-3">
             <motion.button
@@ -129,7 +129,7 @@ export default function HomePage() {
           initial={iosFadeUp.initial}
           animate={iosFadeUp.animate}
           transition={{ ...iosFadeUp.transition, delay: 0.06 }}
-          className="mb-6"
+          className="mb-7"
         >
           <GlassCard variant="purple" className="overflow-hidden p-5 sm:p-6" glow>
             <div className="absolute inset-0 bg-gradient-mesh opacity-80" />
@@ -148,7 +148,7 @@ export default function HomePage() {
                 ))}
               </div>
 
-              <div className="grid gap-5 lg:grid-cols-[1.4fr_0.8fr]">
+              <div className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr]">
                 <div>
                   <h2 className="max-w-xl text-[2rem] font-semibold leading-[1.02] text-white sm:text-[2.6rem]">
                     Learn science in your room, not just on a page.
@@ -158,7 +158,7 @@ export default function HomePage() {
                     tutor questions, and track progress across quizzes, badges, and daily quests.
                   </p>
 
-                  <div className="mt-5 flex flex-wrap gap-3">
+                  <div className="mt-6 flex flex-wrap gap-3">
                     <Link
                       href={{ pathname: `/viewer/${featuredTopic.id}`, query: { from: '/' } }}
                       className="rounded-full bg-gradient-primary px-5 py-3 text-sm font-semibold text-white shadow-glow-sm"
@@ -173,15 +173,15 @@ export default function HomePage() {
                     </Link>
                   </div>
 
-                  <div className="mt-6 grid grid-cols-3 gap-3">
-                    <div className="glass-fast rounded-[22px] p-3">
+                  <div className="mt-7 grid grid-cols-3 gap-3">
+                    <div className="glass-fast rounded-[22px] p-3.5">
                       <p className="text-[11px] uppercase tracking-[0.18em] text-white/42">
                         Progress
                       </p>
                       <p className="mt-2 text-xl font-semibold text-white">{profile.xp}</p>
                       <p className="text-xs text-white/52">XP saved locally</p>
                     </div>
-                    <div className="glass-fast rounded-[22px] p-3">
+                    <div className="glass-fast rounded-[22px] p-3.5">
                       <p className="text-[11px] uppercase tracking-[0.18em] text-white/42">
                         Lessons
                       </p>
@@ -190,7 +190,7 @@ export default function HomePage() {
                       </p>
                       <p className="text-xs text-white/52">Topics explored</p>
                     </div>
-                    <div className="glass-fast rounded-[22px] p-3">
+                    <div className="glass-fast rounded-[22px] p-3.5">
                       <p className="text-[11px] uppercase tracking-[0.18em] text-white/42">
                         Quizzes
                       </p>
@@ -202,8 +202,8 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                <div className="grid gap-3 self-end">
-                  <GlassCard variant="strong" className="p-4" tap={false}>
+                <div className="grid gap-4 self-end">
+                  <GlassCard variant="strong" className="p-[18px] sm:p-4" tap={false}>
                     <p className="screen-kicker">Immersive AR</p>
                     <p className="mt-2 text-lg font-semibold text-white">
                       Place models directly on desks and tables
@@ -214,14 +214,14 @@ export default function HomePage() {
                     </p>
                   </GlassCard>
                   <div className="grid grid-cols-2 gap-3">
-                    <GlassCard className="p-4" tap={false}>
+                    <GlassCard className="p-[18px] sm:p-4" tap={false}>
                       <Brain size={18} className="text-brand-cyan" />
                       <p className="mt-3 text-sm font-semibold text-white">Ask AI</p>
                       <p className="mt-1 text-xs leading-5 text-white/55">
                         Explain structures while viewing the model.
                       </p>
                     </GlassCard>
-                    <GlassCard className="p-4" tap={false}>
+                    <GlassCard className="p-[18px] sm:p-4" tap={false}>
                       <Trophy size={18} className="text-brand-accent" />
                       <p className="mt-3 text-sm font-semibold text-white">Earn XP</p>
                       <p className="mt-1 text-xs leading-5 text-white/55">
@@ -239,7 +239,7 @@ export default function HomePage() {
           initial={iosFadeUp.initial}
           animate={iosFadeUp.animate}
           transition={{ ...iosFadeUp.transition, delay: 0.1 }}
-          className="mb-5"
+          className="mb-6"
         >
           <SearchBar
             placeholder="Search classes, topics, or concepts..."
@@ -252,23 +252,23 @@ export default function HomePage() {
           initial={iosFadeUp.initial}
           animate={iosFadeUp.animate}
           transition={{ ...iosFadeUp.transition, delay: 0.14 }}
-          className="mb-6 grid gap-3 sm:grid-cols-3"
+          className="mb-7 grid gap-4 sm:grid-cols-3"
         >
-          <GlassCard variant="strong" className="p-4">
+            <GlassCard variant="strong" className="p-[18px] sm:p-4">
             <p className="screen-kicker">Your Level</p>
             <p className="mt-2 text-2xl font-semibold text-white">Level {profile.level}</p>
             <p className="mt-1 text-sm text-white/55">
               {profile.xp} XP with {completedBadges.length} badges unlocked.
             </p>
           </GlassCard>
-          <GlassCard variant="strong" className="p-4">
+            <GlassCard variant="strong" className="p-[18px] sm:p-4">
             <p className="screen-kicker">Daily Quest</p>
             <p className="mt-2 text-base font-semibold text-white">{nextQuest.title}</p>
             <p className="mt-1 text-sm text-white/55">
               {nextQuest.progress}/{nextQuest.total} complete for +{nextQuest.rewardXP} XP
             </p>
           </GlassCard>
-          <GlassCard variant="strong" className="p-4">
+            <GlassCard variant="strong" className="p-[18px] sm:p-4">
             <p className="screen-kicker">Saved Revision</p>
             <p className="mt-2 text-2xl font-semibold text-white">{favoriteCount}</p>
             <p className="mt-1 text-sm text-white/55">
@@ -281,7 +281,7 @@ export default function HomePage() {
           initial={iosFadeUp.initial}
           animate={iosFadeUp.animate}
           transition={{ ...iosFadeUp.transition, delay: 0.18 }}
-          className="mb-6 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]"
+          className="mb-7 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]"
         >
           <Link
             href={{
@@ -289,7 +289,7 @@ export default function HomePage() {
               query: { from: '/' },
             }}
           >
-            <GlassCard variant="purple" className="h-full overflow-hidden p-5" glow>
+            <GlassCard variant="purple" className="h-full overflow-hidden p-[22px] sm:p-5" glow>
               <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-white/10 to-transparent" />
               <div className="relative flex h-full items-start justify-between gap-4">
                 <div className="max-w-[70%]">
@@ -310,9 +310,9 @@ export default function HomePage() {
             </GlassCard>
           </Link>
 
-          <div className="grid gap-3">
+          <div className="grid gap-4">
             <Link href="/quiz">
-              <GlassCard className="p-4">
+              <GlassCard className="p-[18px] sm:p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="screen-kicker">Quiz Center</p>
@@ -328,7 +328,7 @@ export default function HomePage() {
               </GlassCard>
             </Link>
             <Link href="/achievements">
-              <GlassCard className="p-4">
+              <GlassCard className="p-[18px] sm:p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="screen-kicker">Achievement Vault</p>
@@ -353,7 +353,7 @@ export default function HomePage() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...iosFadeUp.transition, delay: 0.22 }}
-          className="mb-7"
+          className="mb-8"
         >
           <div className="mb-3 flex items-center justify-between">
             <div>
@@ -369,12 +369,12 @@ export default function HomePage() {
             variants={containerVariants}
             initial="hidden"
             animate="show"
-            className="grid grid-cols-2 gap-3 sm:grid-cols-3"
+            className="grid grid-cols-2 gap-4 sm:grid-cols-3"
           >
             {filteredClasses.map((cls) => (
               <motion.div key={cls.id} variants={itemVariants}>
                 <Link href={`/topics/${cls.id}`}>
-                  <GlassCard className="p-3.5">
+                  <GlassCard className="p-4">
                     <div
                       className={`mb-3 flex h-14 w-14 items-center justify-center rounded-[20px] bg-gradient-to-br ${cls.color} text-2xl shadow-glow-sm`}
                     >
@@ -393,7 +393,7 @@ export default function HomePage() {
           initial={iosFadeUp.initial}
           animate={iosFadeUp.animate}
           transition={{ ...iosFadeUp.transition, delay: 0.26 }}
-          className="mb-7"
+          className="mb-8"
         >
           <div className="mb-3 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -404,9 +404,9 @@ export default function HomePage() {
               Open
             </Link>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {quests.slice(0, 2).map((quest) => (
-              <GlassCard key={quest.id} className="p-4">
+              <GlassCard key={quest.id} className="p-[18px] sm:p-4">
                 <div className="flex items-start gap-4">
                   <div className="glass grid h-12 w-12 place-items-center rounded-[18px] text-2xl">
                     {quest.icon}
@@ -450,7 +450,7 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {spotlightTopics.map((topic) => (
               <Link
                 href={{
@@ -459,7 +459,7 @@ export default function HomePage() {
                 }}
                 key={topic.id}
               >
-                <GlassCard className="p-4">
+                <GlassCard className="p-[18px] sm:p-4">
                   <div className="flex items-center gap-4">
                     <div
                       className={`flex h-14 w-14 items-center justify-center rounded-[20px] bg-gradient-to-br ${topic.color} text-3xl shadow-glow-sm`}

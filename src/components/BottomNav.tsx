@@ -24,7 +24,7 @@ export default function BottomNav() {
 
   return (
     <nav className="bottom-nav">
-      <div className="mx-3 mb-3 rounded-[30px] glass-strong px-2 py-2.5">
+      <div className="mx-4 mb-4 rounded-[30px] glass-strong px-2.5 py-3">
         <div className="flex items-center justify-around">
           {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
             const isActive =
@@ -33,7 +33,7 @@ export default function BottomNav() {
             return (
               <Link key={href} href={href} className="flex-1">
                 <motion.div
-                  className="flex flex-col items-center gap-1 py-1 cursor-pointer"
+                  className="flex flex-col items-center gap-1.5 py-1 cursor-pointer"
                   whileTap={{ scale: 0.95 }}
                   transition={iosSpring}
                 >
@@ -57,7 +57,7 @@ export default function BottomNav() {
                     />
                   </div>
                   <span
-                    className={`text-[10px] font-medium tracking-wide ${
+                    className={`text-[10px] font-medium tracking-[0.02em] ${
                       isActive ? 'text-brand-accent' : 'text-white/40'
                     }`}
                   >

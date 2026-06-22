@@ -1,7 +1,7 @@
 'use client';
 
-import { motion, HTMLMotionProps } from 'framer-motion';
-import { ReactNode } from 'react';
+import { motion, HTMLMotionProps, useReducedMotion } from 'framer-motion';
+import { ReactNode, useEffect, useState } from 'react';
 import clsx from 'clsx';
 import { iosGentleSpring } from '@/lib/motion';
 
@@ -23,6 +23,24 @@ export default function GlassCard({
   glow = false,
   ...props
 }: GlassCardProps) {
+  const prefersReducedMotion = useReducedMotion();
+  const [canHover, setCanHover] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mediaQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const apply = () => setCanHover(mediaQuery.matches);
+    apply();
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', apply);
+      return () => mediaQuery.removeEventListener('change', apply);
+    }
+
+    mediaQuery.addListener(apply);
+    return () => mediaQuery.removeListener(apply);
+  }, []);
+
   const base = clsx(
     'rounded-[28px] overflow-hidden relative',
     {
@@ -38,8 +56,10 @@ export default function GlassCard({
   return (
     <motion.div
       className={base}
-      whileHover={hover ? { scale: 1.012, y: -2 } : undefined}
-      whileTap={tap ? { scale: 0.988 } : undefined}
+      whileHover={
+        hover && canHover && !prefersReducedMotion ? { scale: 1.01, y: -2 } : undefined
+      }
+      whileTap={tap && !prefersReducedMotion ? { scale: 0.992 } : undefined}
       transition={iosGentleSpring}
       {...props}
     >
