@@ -4,9 +4,11 @@ import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Search } from 'lucide-react';
+import { ArrowLeft, Search, Sparkles } from 'lucide-react';
 import GlassCard from '@/components/GlassCard';
 import SearchBar from '@/components/SearchBar';
+import { useAppState } from '@/lib/app-state';
+import { QUIZZES } from '@/lib/gamification';
 import { CATEGORIES, CLASSES, getTopicsByClass } from '@/lib/topics';
 
 export default function TopicsPage() {
@@ -15,6 +17,7 @@ export default function TopicsPage() {
   const classItem = CLASSES.find((entry) => entry.id === classId);
   const [activeCategory, setActiveCategory] = useState<(typeof CATEGORIES)[number]>('All');
   const [query, setQuery] = useState('');
+  const { topicProgress } = useAppState();
 
   const topics = useMemo(() => {
     return getTopicsByClass(classId).filter((topic) => {
@@ -96,11 +99,22 @@ export default function TopicsPage() {
               <GlassCard className="overflow-hidden">
                 <div className={`relative flex h-36 items-center justify-center bg-gradient-to-br ${topic.color}`}>
                   <div className="absolute inset-0 bg-black/10" />
+                  {topicProgress[topic.id]?.favorite ? (
+                    <div className="absolute right-3 top-3 rounded-full bg-black/22 px-2 py-1 text-[10px] font-semibold text-white/80">
+                      Favorite
+                    </div>
+                  ) : null}
                   <div className="relative text-6xl">{topic.thumbnail}</div>
                 </div>
                 <div className="p-4">
                   <h2 className="text-base font-semibold text-white">{topic.title}</h2>
                   <p className="mt-1 text-sm text-white/50">{topic.subtitle}</p>
+                  {QUIZZES[topic.id] ? (
+                    <div className="mt-3 inline-flex items-center gap-1 rounded-full glass-outline px-2.5 py-1 text-[11px] font-semibold text-brand-cyan">
+                      <Sparkles size={12} />
+                      Quiz available
+                    </div>
+                  ) : null}
                 </div>
               </GlassCard>
             </Link>

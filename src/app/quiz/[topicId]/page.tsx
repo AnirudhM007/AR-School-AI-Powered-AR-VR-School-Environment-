@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Clock, CheckCircle2, Zap } from 'lucide-react';
+import { ArrowLeft, Zap } from 'lucide-react';
 import GlassCard from '@/components/GlassCard';
+import { useAppState } from '@/lib/app-state';
 import { QUIZZES } from '@/lib/gamification';
 
 export default function QuizPage() {
@@ -13,11 +13,13 @@ export default function QuizPage() {
   const router = useRouter();
   const topicId = params?.topicId as string;
   const quiz = QUIZZES[topicId];
+  const { completeQuiz, topicProgress } = useAppState();
 
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [score, setScore] = useState(0);
   const [showResult, setShowResult] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [resultSaved, setResultSaved] = useState(false);
 
   if (!quiz) {
     return (
@@ -38,17 +40,29 @@ export default function QuizPage() {
     setSelectedAnswer(index);
 
     const isCorrect = index === question.correctAnswerIndex;
-    if (isCorrect) setScore(s => s + 1);
+    if (isCorrect) setScore((s) => s + 1);
 
     setTimeout(() => {
       if (isLastQuestion) {
         setShowResult(true);
       } else {
-        setCurrentQuestion(c => c + 1);
+        setCurrentQuestion((c) => c + 1);
         setSelectedAnswer(null);
       }
     }, 1000);
   };
+
+  const achievedScore = score;
+
+  useEffect(() => {
+    if (!showResult || resultSaved) return;
+    completeQuiz(topicId, achievedScore, quiz.questions.length, quiz.rewardXP);
+    setResultSaved(true);
+  }, [achievedScore, completeQuiz, quiz.questions.length, quiz.rewardXP, resultSaved, showResult, topicId]);
+
+  const bestScore = topicProgress[topicId]?.quizBestTotal
+    ? `${topicProgress[topicId]?.quizBestScore}/${topicProgress[topicId]?.quizBestTotal}`
+    : null;
 
   return (
     <main className="page-shell px-5 pt-12 pb-24 flex flex-col h-dvh">
@@ -124,20 +138,24 @@ export default function QuizPage() {
               <span className="text-4xl">{score === quiz.questions.length ? '🏆' : '👍'}</span>
             </div>
             <h2 className="text-3xl font-bold text-white mb-2">Quiz Complete!</h2>
-            <p className="text-white/60 mb-8">You scored {score} out of {quiz.questions.length}.</p>
+            <p className="text-white/60 mb-8">You scored {achievedScore} out of {quiz.questions.length}.</p>
 
             <GlassCard variant="purple" className="w-full p-5 flex justify-between items-center mb-8" hover={false} tap={false}>
               <div className="text-left">
                 <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-1">XP Earned</p>
                 <p className="text-brand-accent text-2xl font-bold flex items-center gap-2">
-                  +{Math.round((score / quiz.questions.length) * quiz.rewardXP)} <Zap size={20} className="fill-brand-accent" />
+                  +{Math.round((achievedScore / quiz.questions.length) * quiz.rewardXP)} <Zap size={20} className="fill-brand-accent" />
                 </p>
               </div>
               <div className="text-right">
                 <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-1">Accuracy</p>
-                <p className="text-white text-2xl font-bold">{Math.round((score / quiz.questions.length) * 100)}%</p>
+                <p className="text-white text-2xl font-bold">{Math.round((achievedScore / quiz.questions.length) * 100)}%</p>
               </div>
             </GlassCard>
+
+            {bestScore ? (
+              <p className="mb-6 text-sm text-white/45">Best saved score: {bestScore}</p>
+            ) : null}
 
             <button
               onClick={() => router.back()}

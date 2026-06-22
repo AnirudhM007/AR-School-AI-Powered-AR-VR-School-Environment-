@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bot, Send, Sparkles, User } from 'lucide-react';
+import { useAppState } from '@/lib/app-state';
 import { iosGentleSpring, iosSnappySpring } from '@/lib/motion';
 
 export interface ChatMessage {
@@ -53,6 +54,7 @@ export default function ChatUI({
   initialPrompt,
   quickQuestions = [],
 }: ChatUIProps) {
+  const { markAIQuestion } = useAppState();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '0',
@@ -106,6 +108,7 @@ export default function ChatUI({
       }
 
       const data = await response.json();
+      markAIQuestion(topicId);
       setMessages((prev) => [
         ...prev,
         {
@@ -118,6 +121,7 @@ export default function ChatUI({
       ]);
     } catch {
       const mock = getMockResponse(question, topic);
+      markAIQuestion(topicId);
       setMessages((prev) => [
         ...prev,
         {

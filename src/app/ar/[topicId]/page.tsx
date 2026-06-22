@@ -20,6 +20,7 @@ import dynamic from 'next/dynamic';
 import AnnotationPanel from '@/components/AnnotationPanel';
 import GlassCard from '@/components/GlassCard';
 import FloatingButton from '@/components/FloatingButton';
+import { useAppState } from '@/lib/app-state';
 import { useAnnotations } from '@/hooks/useAnnotations';
 import { useARSession } from '@/hooks/useARSession';
 import { getTopicById } from '@/lib/topics';
@@ -36,6 +37,7 @@ export default function ARPage() {
   const topic = getTopicById(topicId);
   const { state, error, session, start, end } = useARSession();
   const { annotations } = useAnnotations(topic?.id ?? '', topic?.annotations ?? []);
+  const { markARSession, preferences } = useAppState();
 
   const [showHelp, setShowHelp] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
@@ -96,6 +98,11 @@ export default function ARPage() {
       setTimeout(() => setActiveControl('move'), 220);
     }
   }, [activeControl]);
+
+  useEffect(() => {
+    if (!placedPosition || !topic?.id) return;
+    markARSession(topic.id);
+  }, [markARSession, placedPosition, topic?.id]);
 
   if (!topic) {
     return (
@@ -221,14 +228,20 @@ export default function ARPage() {
       ? 'Starting AR session...'
       : state === 'active'
         ? placedPosition
-          ? showInfoPanel
-            ? 'Model placed. Tap a floating label to open the part information card.'
-            : `Model placed. Tap Info to reveal labels like ${annotationNames || 'Aorta and Left Atrium'}.`
-          : planeReady
-            ? 'Surface detected. Tap anywhere to place the object on the plane.'
-            : 'Scan the room slowly until a floor or table plane is detected.'
+          ? preferences.hintsEnabled
+            ? showInfoPanel
+              ? 'Model placed. Tap a floating label to open the part information card.'
+              : `Model placed. Tap Info to reveal labels like ${annotationNames || 'Aorta and Left Atrium'}.`
+            : null
+          : preferences.hintsEnabled
+            ? planeReady
+              ? 'Surface detected. Tap anywhere to place the object on the plane.'
+              : 'Scan the room slowly until a floor or table plane is detected.'
+            : null
         : null;
-
+ 
+  const shouldShowStatus = Boolean(statusCopy);
+ 
   return (
     <main
       className={`fixed inset-0 z-50 overflow-hidden ${state === 'active' ? 'bg-transparent' : 'gradient-bg'}`}
@@ -276,24 +289,26 @@ export default function ARPage() {
         </button>
       </motion.div>
 
-      <div className="relative z-10 mt-4 flex justify-center px-4">
-        <AnimatePresence mode="wait">
-          {state === 'starting' ? (
-            <motion.div key="starting" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="glass-fast rounded-full px-5 py-3 text-sm text-white/75">
-              {statusCopy}
-            </motion.div>
-          ) : state === 'active' ? (
-            <motion.div key="active" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="glass-fast flex items-center gap-2 rounded-full px-5 py-3 text-sm text-white/75">
-              <Move size={15} className={planeReady ? 'text-brand-accent' : 'text-white/45'} />
-              {statusCopy}
-            </motion.div>
-          ) : state === 'unsupported' || state === 'error' ? (
-            <motion.div key="fallback" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="glass-strong max-w-sm rounded-[24px] px-5 py-4 text-center text-sm text-white/70">
-              {state === 'error' ? error : 'AR is not supported here.'} The lesson is still available in the 3D fallback view.
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-      </div>
+      {shouldShowStatus ? (
+        <div className="relative z-10 mt-4 flex justify-center px-4">
+          <AnimatePresence mode="wait">
+            {state === 'starting' ? (
+              <motion.div key="starting" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="glass-fast rounded-full px-5 py-3 text-sm text-white/75">
+                {statusCopy}
+              </motion.div>
+            ) : state === 'active' ? (
+              <motion.div key="active" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="glass-fast flex items-center gap-2 rounded-full px-5 py-3 text-sm text-white/75">
+                <Move size={15} className={planeReady ? 'text-brand-accent' : 'text-white/45'} />
+                {statusCopy}
+              </motion.div>
+            ) : state === 'unsupported' || state === 'error' ? (
+              <motion.div key="fallback" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="glass-strong max-w-sm rounded-[24px] px-5 py-4 text-center text-sm text-white/70">
+                {state === 'error' ? error : 'AR is not supported here.'} The lesson is still available in the 3D fallback view.
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+        </div>
+      ) : null}
 
       <motion.div initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.12 }} className="absolute right-4 top-1/4 z-10 flex flex-col gap-3">
         <FloatingButton

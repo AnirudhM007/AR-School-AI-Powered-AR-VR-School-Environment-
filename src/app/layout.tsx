@@ -4,6 +4,7 @@ import './globals.css';
 import BottomNav from '@/components/BottomNav';
 import DevPreviewReset from '@/components/DevPreviewReset';
 import MobileLaunchHome from '@/components/MobileLaunchHome';
+import { AppStateProvider } from '@/lib/app-state';
 
 const bodyFont = Manrope({
   subsets: ['latin'],
@@ -48,10 +49,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className={`${bodyFont.variable} ${headingFont.variable} min-h-dvh bg-brand-bg text-white antialiased`}
         suppressHydrationWarning
       >
-        <DevPreviewReset />
-        <MobileLaunchHome />
-        {children}
-        <BottomNav />
+        <AppStateProvider>
+          <DevPreviewReset />
+          <MobileLaunchHome />
+          {children}
+          <BottomNav />
+        </AppStateProvider>
       </body>
     </html>
   );

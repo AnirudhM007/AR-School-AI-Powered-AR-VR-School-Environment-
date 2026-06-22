@@ -4,12 +4,14 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Heart, Info, Maximize2, RotateCw, Sparkles, ZoomIn } from 'lucide-react';
+import { ArrowLeft, Heart, Info, Maximize2, RotateCw, Sparkles, Trophy, ZoomIn } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import AnnotationPanel from '@/components/AnnotationPanel';
 import GlassCard from '@/components/GlassCard';
 import FloatingButton from '@/components/FloatingButton';
+import { useAppState } from '@/lib/app-state';
 import { useAnnotations } from '@/hooks/useAnnotations';
+import { QUIZZES } from '@/lib/gamification';
 import { iosFadeDown, iosFadeUp } from '@/lib/motion';
 import { getTopicById } from '@/lib/topics';
 import { TopicAnnotation } from '@/lib/types';
@@ -26,12 +28,23 @@ export default function ViewerPage() {
   const topic = getTopicById(topicId);
   const from = searchParams.get('from') ?? '/';
   const { annotations } = useAnnotations(topic?.id ?? '', topic?.annotations ?? []);
+  const { markTopicViewed, toggleFavorite, topicProgress } = useAppState();
 
   const [liked, setLiked] = useState(false);
   const [activeMode, setActiveMode] = useState<ActiveMode>('info');
   const [autoRotate, setAutoRotate] = useState(true);
   const [expandedCanvas, setExpandedCanvas] = useState(false);
   const [selectedAnnotation, setSelectedAnnotation] = useState<TopicAnnotation | null>(null);
+
+  useEffect(() => {
+    if (!topic?.id) return;
+    markTopicViewed(topic.id);
+  }, [markTopicViewed, topic?.id]);
+
+  useEffect(() => {
+    if (!topic?.id) return;
+    setLiked(Boolean(topicProgress[topic.id]?.favorite));
+  }, [topic?.id, topicProgress]);
 
   useEffect(() => {
     if (!selectedAnnotation) return;
@@ -85,7 +98,10 @@ export default function ViewerPage() {
             <h1 className="text-lg font-semibold text-white">{topic.title}</h1>
           </div>
           <button
-            onClick={() => setLiked((value) => !value)}
+            onClick={() => {
+              toggleFavorite(topic.id);
+              setLiked((value) => !value);
+            }}
             className="glass grid h-11 w-11 place-items-center rounded-[20px]"
           >
             <Heart size={18} className={liked ? 'fill-rose-400 text-rose-400' : 'text-white/55'} />
@@ -247,14 +263,34 @@ export default function ViewerPage() {
         </GlassCard>
 
         <GlassCard className="p-5">
-          <p className="screen-kicker mb-3">Related Topics</p>
-          <div className="flex flex-wrap gap-2">
-            {topic.relatedTopics.map((entry) => (
-              <span key={entry} className="glass-outline rounded-full px-3 py-1.5 text-xs font-semibold text-white/70">
-                {entry}
-              </span>
-            ))}
-          </div>
+          {QUIZZES[topic.id] ? (
+            <>
+              <div className="mb-3 flex items-center gap-2">
+                <Trophy size={16} className="text-brand-cyan" />
+                <h3 className="text-lg font-semibold text-white">Quick Quiz</h3>
+              </div>
+              <p className="mb-4 text-sm leading-6 text-white/60">
+                Lock in the concept with a short quiz and save your best score to your local profile.
+              </p>
+              <Link
+                href={`/quiz/${topic.id}`}
+                className="inline-flex rounded-full bg-gradient-primary px-4 py-2.5 text-sm font-semibold text-white shadow-glow-sm"
+              >
+                Start Quiz
+              </Link>
+            </>
+          ) : (
+            <>
+              <p className="screen-kicker mb-3">Related Topics</p>
+              <div className="flex flex-wrap gap-2">
+                {topic.relatedTopics.map((entry) => (
+                  <span key={entry} className="glass-outline rounded-full px-3 py-1.5 text-xs font-semibold text-white/70">
+                    {entry}
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
         </GlassCard>
       </motion.section>
     </main>

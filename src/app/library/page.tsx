@@ -3,9 +3,11 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Compass, Filter } from 'lucide-react';
+import { Compass, Filter, Sparkles } from 'lucide-react';
 import GlassCard from '@/components/GlassCard';
 import SearchBar from '@/components/SearchBar';
+import { useAppState } from '@/lib/app-state';
+import { QUIZZES } from '@/lib/gamification';
 import { iosFadeDown, iosFadeUp, iosGentleSpring } from '@/lib/motion';
 import { CATEGORIES, TOPICS } from '@/lib/topics';
 
@@ -22,6 +24,7 @@ const itemVariants = {
 export default function LibraryPage() {
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<(typeof CATEGORIES)[number]>('All');
+  const { topicProgress } = useAppState();
 
   const filteredTopics = useMemo(() => {
     return TOPICS.filter((topic) => {
@@ -91,6 +94,11 @@ export default function LibraryPage() {
               <GlassCard className="overflow-hidden">
                 <div className={`relative flex h-36 items-center justify-center bg-gradient-to-br ${topic.color}`}>
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.3),transparent_45%)]" />
+                  {topicProgress[topic.id]?.favorite ? (
+                    <div className="absolute right-3 top-3 rounded-full bg-black/22 px-2 py-1 text-[10px] font-semibold text-white/80">
+                      Favorite
+                    </div>
+                  ) : null}
                   <div className="absolute bottom-3 left-3 rounded-full border border-white/20 bg-black/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/75">
                     {topic.category}
                   </div>
@@ -105,6 +113,12 @@ export default function LibraryPage() {
                         {stat}
                       </span>
                     ))}
+                    {QUIZZES[topic.id] ? (
+                      <span className="inline-flex items-center gap-1 rounded-full glass-outline px-2.5 py-1 text-[11px] font-semibold text-brand-cyan">
+                        <Sparkles size={12} />
+                        Quiz
+                      </span>
+                    ) : null}
                   </div>
                 </div>
               </GlassCard>

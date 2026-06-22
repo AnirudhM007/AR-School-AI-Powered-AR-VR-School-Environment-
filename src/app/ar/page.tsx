@@ -71,7 +71,7 @@ export default function ARIndexPage() {
           <div className="flex items-center gap-3">
             <Sparkles size={16} className="text-brand-cyan" />
             <p className="text-sm text-white/65">
-              Surface hit-testing is still pending. Right now the model appears in front of the camera and can be adjusted manually once the session starts.
+              Surface detection, reticle placement, floating part labels, and contextual AI help are all available in the current AR lesson flow.
             </p>
           </div>
         </GlassCard>

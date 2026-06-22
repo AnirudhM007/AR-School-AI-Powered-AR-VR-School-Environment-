@@ -3,14 +3,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Home, BookOpen, Cpu, User, Trophy } from 'lucide-react';
+import { Brain, BookOpen, Cpu, Home, User } from 'lucide-react';
 import { iosGentleSpring, iosSpring } from '@/lib/motion';
 
 const NAV_ITEMS = [
   { label: 'Home',    href: '/',        icon: Home },
   { label: 'Library', href: '/library', icon: BookOpen },
+  { label: 'Quiz',    href: '/quiz',    icon: Brain },
   { label: 'AR',      href: '/ar',      icon: Cpu },
-  { label: 'Rank',    href: '/leaderboard', icon: Trophy },
   { label: 'Profile', href: '/profile', icon: User },
 ];
 

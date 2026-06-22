@@ -1,101 +1,112 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Medal, Star } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Medal, Sparkles, Trophy } from 'lucide-react';
 import GlassCard from '@/components/GlassCard';
-import { LEADERBOARD_CITY, LEADERBOARD_GLOBAL, LeaderboardEntry } from '@/lib/gamification';
+import { useAppState } from '@/lib/app-state';
+import { LeaderboardEntry } from '@/lib/gamification';
 
-const TABS = ['City', 'Country', 'Global'] as const;
+const TABS = ['City', 'Global'] as const;
 type Tab = typeof TABS[number];
 
 export default function LeaderboardPage() {
   const [activeTab, setActiveTab] = useState<Tab>('Global');
+  const { leaderboardCity, leaderboardGlobal } = useAppState();
 
-  const data: LeaderboardEntry[] = activeTab === 'Global' ? LEADERBOARD_GLOBAL : activeTab === 'City' ? LEADERBOARD_CITY : LEADERBOARD_CITY;
+  const data: LeaderboardEntry[] = activeTab === 'Global' ? leaderboardGlobal : leaderboardCity;
 
   return (
-    <main className="page-shell px-5 pt-12 pb-24">
-      {/* ── Header ── */}
+    <main className="page-shell px-5 pt-10">
       <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="mb-6 text-center">
-        <div className="w-16 h-16 mx-auto bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-glow-sm mb-3">
+        <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 shadow-glow-sm">
           <Trophy size={32} className="text-white" />
         </div>
         <h1 className="text-2xl font-bold text-white">Leaderboard</h1>
-        <p className="text-white/50 text-sm mt-1">See how you rank among other students</p>
+        <p className="mt-1 text-sm text-white/50">Compare your learning streak with other students</p>
       </motion.div>
 
-      {/* ── Tabs ── */}
-      <div className="flex gap-2 p-1 glass rounded-2xl mb-6 relative">
-        {TABS.map(tab => {
+      <div className="mb-6 flex gap-2 rounded-2xl p-1 glass">
+        {TABS.map((tab) => {
           const isActive = activeTab === tab;
           return (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-2 text-sm font-semibold rounded-xl relative z-10 transition-colors ${
+              className={`relative z-10 flex-1 rounded-xl py-2 text-sm font-semibold ${
                 isActive ? 'text-white' : 'text-white/50'
               }`}
             >
-              {isActive && (
+              {isActive ? (
                 <motion.div
                   layoutId="leaderboard-tab"
-                  className="absolute inset-0 bg-brand-purple rounded-xl -z-10 shadow-glow-sm"
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  className="absolute inset-0 -z-10 rounded-xl bg-gradient-primary shadow-glow-sm"
+                  transition={{ type: 'spring', stiffness: 320, damping: 26 }}
                 />
-              )}
+              ) : null}
               {tab}
             </button>
           );
         })}
       </div>
 
-      {/* ── List ── */}
+      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="mb-5">
+        <GlassCard variant="purple" className="p-4" glow>
+          <div className="flex items-center gap-3">
+            <Sparkles size={18} className="text-brand-cyan" />
+            <p className="text-sm leading-6 text-white/70">
+              Ranking is based on locally tracked XP for now, so your progress updates instantly as you explore, quiz, and learn in AR.
+            </p>
+          </div>
+        </GlassCard>
+      </motion.div>
+
       <div className="space-y-3">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
-            initial={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, x: -18 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            transition={{ duration: 0.2 }}
+            exit={{ opacity: 0, x: 18 }}
             className="space-y-3"
           >
             {data.map((user, index) => (
               <GlassCard
-                key={user.id}
-                className={`p-4 flex items-center gap-4 ${user.isCurrentUser ? 'glow-border' : ''}`}
+                key={`${activeTab}-${user.id}`}
+                className={`flex items-center gap-4 p-4 ${user.isCurrentUser ? 'glow-border' : ''}`}
                 variant={user.isCurrentUser ? 'purple' : 'default'}
                 tap={false}
+                hover={false}
               >
-                {/* Rank Badge */}
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                  index === 0 ? 'bg-yellow-500 text-yellow-900' :
-                  index === 1 ? 'bg-gray-300 text-gray-800' :
-                  index === 2 ? 'bg-amber-700 text-amber-100' :
-                  'glass text-white/50'
+                <div className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${
+                  index === 0
+                    ? 'bg-yellow-500 text-yellow-900'
+                    : index === 1
+                      ? 'bg-white/70 text-slate-900'
+                      : index === 2
+                        ? 'bg-amber-700 text-amber-100'
+                        : 'glass text-white/55'
                 }`}>
                   {index < 3 ? <Medal size={16} /> : `#${index + 1}`}
                 </div>
 
-                {/* Avatar */}
                 <div className="text-3xl">{user.avatar}</div>
 
-                {/* Info */}
-                <div className="flex-1">
-                  <p className="text-white font-bold text-sm flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center gap-2 text-sm font-bold text-white">
                     {user.username}
-                    {user.isCurrentUser && <span className="text-[9px] px-1.5 py-0.5 bg-brand-accent text-brand-purple rounded-full uppercase tracking-wider">You</span>}
+                    {user.isCurrentUser ? (
+                      <span className="rounded-full bg-brand-accent px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-brand-purple">
+                        You
+                      </span>
+                    ) : null}
                   </p>
-                  <p className="text-white/50 text-xs mt-0.5">Level {user.level}</p>
+                  <p className="mt-0.5 text-xs text-white/50">Level {user.level}</p>
                 </div>
 
-                {/* XP */}
                 <div className="text-right">
-                  <p className="text-brand-accent font-bold text-sm flex items-center gap-1 justify-end">
-                    {user.xp.toLocaleString()} <Star size={12} className="fill-brand-accent" />
-                  </p>
-                  <p className="text-white/40 text-[10px]">XP</p>
+                  <p className="text-sm font-bold text-brand-accent">{user.xp.toLocaleString()} XP</p>
+                  <p className="text-[10px] text-white/38">Score</p>
                 </div>
               </GlassCard>
             ))}
